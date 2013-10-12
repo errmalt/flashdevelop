@@ -51,6 +51,13 @@ namespace LoomContext
         {
             if (loomFolder != null) return loomFolder;
 
+            var loomPath = Environment.ExpandEnvironmentVariables("%LoomPath%");
+            if (Path.IsPathRooted(loomPath) && Directory.Exists(loomPath))
+            {
+                loomFolder = Path.Combine(loomPath, "bin");
+                return loomFolder;
+            }
+
             string[] path = Environment.ExpandEnvironmentVariables("%PATH%").Split(';');
             foreach (string dir in path)
             {
@@ -59,6 +66,19 @@ namespace LoomContext
                     loomFolder = dir;
                     return loomFolder;
                 }
+            }
+
+            var programFiles = Environment.ExpandEnvironmentVariables("%ProgramFiles%");
+            if (Path.IsPathRooted(programFiles) && Directory.Exists(programFiles))
+            {
+                loomFolder = programFiles;
+                return loomFolder;
+            }
+            programFiles = Environment.ExpandEnvironmentVariables("%ProgramFiles(x86)%");
+            if (Path.IsPathRooted(programFiles) && Directory.Exists(programFiles))
+            {
+                loomFolder = programFiles;
+                return loomFolder;
             }
             return "";
         }

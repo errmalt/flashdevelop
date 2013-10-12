@@ -1504,6 +1504,9 @@ Alternatively, Adobe Flash Professional can also be used for syntax checking - p
   <data name="ProjectManager.Description.FlashStrict" xml:space="preserve">
     <value>More type strict Flash API.</value>
   </data>
+  <data name="ProjectManager.Description.NoInlineOnDebug" xml:space="preserve">
+    <value>Set --no-inline on Debug.</value>
+  </data>
   <data name="ProjectManager.Description.Frame" xml:space="preserve">
     <value>If using Code Injection only, exports your classes into a specific frame of the input SWF.</value>
   </data>
@@ -5015,5 +5018,17 @@ Custom locales must be an extension of a default locale, e.g. en-US.</value>
   <data name="ProjectManager.Label.TestMovieWebserver" xml:space="preserve">
     <value>Webserver...</value>
     <comment>Added after 4.4.2</comment>
+  </data>
+  <data name="FlashDevelop.Label.YesToAll" xml:space="preserve">
+    <value>Yes to &amp;all</value>
+    <comment>Added after 4.4.3</comment>
+  </data>
+  <data name="TaskListPanel.Description.ExploringMode" xml:space="preserve">
+    <value>The task exploring mode. Light: current files and manual refresh, Complete: current files, project files and manual refresh.</value>
+    <comment>Added after 4.4.3</comment>
+  </data>
+  <data name="BasicCompletion.Description.AutoInsertType" xml:space="preserve">
+    <value>Specifies when pressing Enter key inserts the completion list item.</value>
+    <comment>Added after 4.4.3</comment>
   </data>
 </root>

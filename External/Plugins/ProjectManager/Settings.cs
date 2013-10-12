@@ -44,9 +44,7 @@ namespace ProjectManager
         string[] executableFileTypes = new string[] { ".exe", ".lnk", ".fla", ".doc", ".pps", ".psd", ".png", ".jpg", ".gif", ".xls", ".docproj", ".ttf", ".otf", ".wav", ".mp3", ".ppt", ".pptx", ".docx", ".xlsx", ".ai", ".pdf", ".zip", ".rar" };
         string[] filteredDirectoryNames = new string[] { "src", "source", "sources", "as", "as2", "as3", "actionscript", "flash", "classes", "trunk", "svn", "git", "hg", "..", "." };
 
-        Color tabHighlightColor = Color.FromArgb(255, 190, 60);
         HighlightType tabHighlightType = HighlightType.ExternalFiles;
-
 
         #region Properties
         [Browsable(false)]
@@ -197,16 +195,6 @@ namespace ProjectManager
         {
             get { return enableMxmlMapping; }
             set { enableMxmlMapping = value; FireChanged("ShowGlobalClasspaths"); }
-        }
-
-        [DisplayName("Tab Highlight Color")]
-        [LocalizedDescription("ProjectManager.Description.TabHighlightColor")]
-        [LocalizedCategory("ProjectManager.Category.OtherOptions")]
-        [DefaultValue(typeof(Color), "0xFFBE3C")]
-        public Color TabHighlightColor
-        {
-            get { return tabHighlightColor; }
-            set { tabHighlightColor = value; }
         }
 
         [DisplayName("Tab Highlight Type")]

@@ -1,6 +1,5 @@
 using System;
 using System.IO;
-using System.Windows.Forms;
 using System.Collections.Generic;
 using CodeRefactor.Provider;
 using PluginCore.FRService;
@@ -21,7 +20,6 @@ namespace CodeRefactor.Commands
     {
         private String newName;
         private Boolean outputResults;
-        private Boolean ignoreDeclarationSource;
         private FindAllReferences findAllReferencesCommand;
 
         public String NewName
@@ -42,7 +40,7 @@ namespace CodeRefactor.Commands
         /// A new Rename refactoring command.
         /// Uses the current text location as the declaration target.
         /// </summary>
-        /// <param name="output">If true, will send the found results to the trace log and results panel</param>
+        /// <param name="outputResults">If true, will send the found results to the trace log and results panel</param>
         public Rename(Boolean outputResults) : this(RefactoringHelper.GetDefaultRefactorTarget(), outputResults)
         {
         }
@@ -76,17 +74,32 @@ namespace CodeRefactor.Commands
         /// <param name="ignoreDeclarationSource">If true, will not rename the original declaration source.  Useful for Encapsulation refactoring.</param>
         public Rename(ASResult target, Boolean outputResults, String newName, Boolean ignoreDeclarationSource)
         {
-            this.outputResults = outputResults;
-            this.ignoreDeclarationSource = ignoreDeclarationSource;
-            this.newName = (newName == null || newName.Trim() == String.Empty) ? GetNewName(target.Member.Name) : newName;  // gets the new name to refactor to
-            if (this.newName != null)
+            if (target == null)
             {
-                // create a FindAllReferences refactor to get all the changes we need to make
-                // we'll also let it output the results, at least until we implement a way of outputting the renamed results later
-                this.findAllReferencesCommand = new FindAllReferences(target, false, ignoreDeclarationSource);
-                // register a completion listener to the FindAllReferences so we can rename the entries
-                this.findAllReferencesCommand.OnRefactorComplete += new EventHandler<RefactorCompleteEventArgs<IDictionary<string, List<SearchMatch>>>>(this.OnFindAllReferencesCompleted);
+                TraceManager.Add("refactor target is null");
+                return;
             }
+
+            this.outputResults = outputResults;
+
+            Boolean isEnum = target.Type.IsEnum();
+            Boolean isVoid = target.Type.IsVoid();
+            Boolean isClass = !isVoid && target.IsStatic && target.Member == null;
+
+            if (!string.IsNullOrEmpty(newName))
+                this.newName = newName;
+            else if (isEnum || isClass)
+                this.newName = GetNewName(target.Type.Name);
+            else
+                this.newName = GetNewName(target.Member.Name);
+
+            if (string.IsNullOrEmpty(this.newName)) return;
+
+            // create a FindAllReferences refactor to get all the changes we need to make
+            // we'll also let it output the results, at least until we implement a way of outputting the renamed results later
+            this.findAllReferencesCommand = new FindAllReferences(target, false, ignoreDeclarationSource);
+            // register a completion listener to the FindAllReferences so we can rename the entries
+            this.findAllReferencesCommand.OnRefactorComplete += new EventHandler<RefactorCompleteEventArgs<IDictionary<string, List<SearchMatch>>>>(this.OnFindAllReferencesCompleted);
         }
 
         #region RefactorCommand Implementation
@@ -104,7 +117,7 @@ namespace CodeRefactor.Commands
         /// </summary>
         public override Boolean IsValid()
         {
-            return this.newName != null && this.newName.Trim() != String.Empty;
+            return !string.IsNullOrEmpty(this.newName);
         }
 
         #endregion
@@ -134,6 +147,74 @@ namespace CodeRefactor.Commands
             UserInterfaceManager.ProgressDialog.Hide();
             PluginCore.Controls.MessageBar.Locked = false;
             this.FireOnRefactorComplete();
+
+            RenameFile();
+        }
+
+        private void RenameFile()
+        {
+            ASResult target = findAllReferencesCommand.CurrentTarget;
+            Boolean isEnum = target.Type.IsEnum();
+            Boolean isClass = false;
+            Boolean isConstructor = false;
+
+            if (!isEnum)
+            {
+                Boolean isVoid = target.Type.IsVoid();
+                isClass = !isVoid && target.IsStatic && target.Member == null;
+                isConstructor = !isVoid && !isClass && RefactoringHelper.CheckFlag(target.Member.Flags, FlagType.Constructor);
+            }
+
+            Boolean isGlobalFunction = false;
+            Boolean isGlobalNamespace = false;
+
+            if (!isEnum && !isClass && !isConstructor && (target.InClass == null || target.InClass.IsVoid()))
+            {
+                isGlobalFunction = RefactoringHelper.CheckFlag(target.Member.Flags, FlagType.Function);
+                isGlobalNamespace = RefactoringHelper.CheckFlag(target.Member.Flags, FlagType.Namespace);
+            }
+
+            if (!isEnum && !isClass && !isConstructor && !isGlobalFunction && !isGlobalNamespace) return;
+
+            FileModel inFile = null;
+            String originName = null;
+
+            if (isEnum || isClass)
+            {
+                inFile = target.Type.InFile;
+                originName = target.Type.Name;
+            }
+            else
+            {
+                inFile = target.Member.InFile;
+                originName = target.Member.Name;
+            }
+
+            if (inFile == null) return;
+
+            String oldFileName = inFile.FileName;
+            String oldName = Path.GetFileNameWithoutExtension(oldFileName);
+
+            if (!string.IsNullOrEmpty(oldName) && !oldName.Equals(originName)) return;
+
+            String fullPath = Path.GetFullPath(inFile.FileName);
+            fullPath = Path.GetDirectoryName(fullPath);
+
+            String newFileName = Path.Combine(fullPath, NewName + Path.GetExtension(oldFileName));
+
+            if (string.IsNullOrEmpty(oldFileName) || oldFileName.Equals(newFileName)) return;
+
+            foreach (ITabbedDocument doc in PluginBase.MainForm.Documents)
+                if (doc.FileName.Equals(oldFileName))
+                {
+                    doc.Save();
+                    doc.Close();
+                }
+
+            File.Move(oldFileName, newFileName);
+            PluginBase.MainForm.OpenEditableDocument(newFileName, false);
+
+            //TODO: report
         }
 
         /// <summary>

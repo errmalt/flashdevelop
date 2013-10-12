@@ -3,7 +3,7 @@ FlashDevelop
 
 FlashDevelop is a free and open source (MIT license) source code editor.
 
-[![FlashDevelop UI](http://flashdevelop.org/screenshots/fdstart-mini.png "FlashDevelop")](http://www.flashdevelop.org/)
+[![FlashDevelop](http://flashdevelop.org/screenshots/fdstart-mini.png "FlashDevelop")](http://www.flashdevelop.org/)
 
 FlashDevelop offers first class support for Flash ActionScript (2 and 3), Haxe and Loom development: great and fast code completion & code generation, projects compilation & Flash debugging, plenty of project templates, SWF/SWC exploration, etc.
 
@@ -13,16 +13,17 @@ Platform
 --------
 
 * Microsoft Windows .NET 2.0 application (Windows XP, Windows Vista, Windows 7, Windows 8)
+* Includes native (Qt) Mac OSX/Linux helper to improve virtualization (VirtualBox, VMWare, Parallels)
 
 Building
 --------
 
 * Open in Visual Studio 2010 or C# Express 2010 (free),
-* If C# Express, enable Advanced Parameters (Tools > Parameters),
-* Activate Debug + "x86" target configuration (Solution properties > Configuration Properties > Configuration Manager),
-* Build PluginCore project first, then build solution.
+* Click the solution and select "Release|x86" from "Active config" in Properties panel,
+* Build PluginCore project first, then FlashDevelop and then the entire solution.
 
 Contribute
 --------
 
-Get forking and [join the community at FlashDevelop forums](http://www.flashdevelop.org/community/index.php)
+* Get forking and [join the community at FlashDevelop forums.](http://www.flashdevelop.org/community/index.php)
+* Donate via PayPal: [details and list of donators.](http://www.flashdevelop.org/wikidocs/index.php?title=FlashDevelop:Site_support)

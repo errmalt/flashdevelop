@@ -740,7 +740,7 @@ namespace ASCompletion.Completion
                 {
                     ClassModel oClass = result.InClass != null ? result.InClass : result.Type;
 
-                    if (result.IsPackage || oClass.IsVoid())
+                    if (result.IsPackage || (oClass.IsVoid() && (result.Member.Flags & FlagType.Function) == 0 && (result.Member.Flags & FlagType.Namespace) == 0))
                         return;
 
                     // type details
@@ -2271,9 +2271,12 @@ namespace ASCompletion.Completion
 
 			// no head, exit
 			if (head.IsNull()) return notFound;
+
             // accessing instance member in static function, exit
             if (IsStatic(context.ContextFunction) && head.RelClass == inClass
-                && head.Member != null && !IsStatic(head.Member)) return notFound;
+                && head.Member != null && !IsStatic(head.Member)
+                && (head.Member.Flags & FlagType.Constructor) == 0)
+                return notFound;
 
             // resolve
             ASResult result = EvalTail(context, inFile, head, tokens, complete);
@@ -2459,7 +2462,7 @@ namespace ASCompletion.Completion
                     result.InFile = inFile;
 					result.InClass = inClass;
                     if (var.Type == null && (var.Flags & FlagType.LocalVar) > 0 
-                        && context.Features.hasInference && !context.Features.externalCompletion)
+                        && context.Features.hasInference /*&& !context.Features.externalCompletion*/)
                         InferVariableType(local, var);
                     result.Type = context.ResolveType(var.Type, inFile);
 					
@@ -2531,6 +2534,7 @@ namespace ASCompletion.Completion
                     {
                         result.Member = item;
                         result.RelClass = ClassModel.VoidClass;
+                        result.InClass = ClassModel.VoidClass;
                         result.Type = (p < 0 && (item.Flags & FlagType.Function) > 0) 
                             ? context.ResolveType("Function", null) 
                             : context.ResolveType(item.Type, item.InFile);
@@ -2611,8 +2615,16 @@ namespace ASCompletion.Completion
                     ASResult result = EvalExpression(expr.Value, expr, ASContext.Context.CurrentModel, ASContext.Context.CurrentClass, true, false);
                     if (!result.IsNull())
                     {
-                        if (result.Member != null) var.Type = result.Member.Type;
-                        else if (result.Type != null && !result.Type.IsVoid()) var.Type = result.Type.QualifiedName;
+                        if (result.Member != null)
+                        {
+                            var.Type = result.Member.Type;
+                            var.Flags |= FlagType.Inferred;
+                        }
+                        else if (result.Type != null && !result.Type.IsVoid())
+                        {
+                            var.Type = result.Type.QualifiedName;
+                            var.Flags |= FlagType.Inferred;
+                        }
                     }
                 }
             }
@@ -2626,9 +2638,10 @@ namespace ASCompletion.Completion
             FileModel inPackage = context.ResolvePackage(pkg, false);
             if (inPackage != null)
             {
+                int pLen = pkg != null ? pkg.Length : 0;
                 foreach (MemberModel friend in inPackage.Imports)
                 {
-                    if (friend.Name == token)
+                    if (friend.Name == token && (pLen == 0 || friend.Type.LastIndexOf(context.Features.dot) == pLen))
                     {
                         ClassModel friendClass = context.GetModel(inFile.Package, token, inFile.Package);
                         if (!friendClass.IsVoid())
@@ -3506,7 +3519,7 @@ namespace ASCompletion.Completion
 
         private static string GetToolTipDoc(MemberModel model)
         {
-            return ASDocumentation.GetTipShortDetails(model, null).TrimStart(new char[] { ' ', '…' });
+            return ASDocumentation.GetTipShortDetails(model, null).TrimStart(new char[] { ' ', '\u2026' });
         }
 
 		static private string MemberTooltipText(MemberModel member, ClassModel inClass)
@@ -3714,32 +3727,39 @@ namespace ASCompletion.Completion
                     return true;
                 }
             }
+
+            int offset = 0;
             int startPos = expr.PositionExpression;
             int endPos = sci.CurrentPos;
 
-            // check if in the same file or package
-            if (cFile == inFile || features.hasPackages && cFile.Package == inFile.Package)
+            if (shouldShortenType(sci, position, import, cFile, ref offset))
             {
+                // insert short name
+                startPos += offset;
+                endPos += offset;
                 sci.SetSel(startPos, endPos);
                 sci.ReplaceSel(checkShortName(import.Name));
                 sci.SetSel(sci.CurrentPos, sci.CurrentPos);
-                return true;
-            }
+            }            
+            return true;
+        }
 
-            int curLine = sci.LineFromPosition(position);
+        private static bool shouldShortenType(ScintillaControl sci, int position, MemberModel import, FileModel cFile, ref int offset)
+        {
+            // check if in the same file or package
+            /*if (cFile == inFile || features.hasPackages && cFile.Package == inFile.Package)
+                return true*/
+
+            // type name already present in imports
             try
             {
+                int curLine = sci.LineFromPosition(position);
                 if (ASContext.Context.IsImported(import, curLine))
-                {
-                    sci.SetSel(startPos, endPos);
-                    sci.ReplaceSel(checkShortName(import.Name));
-                    sci.SetSel(sci.CurrentPos, sci.CurrentPos);
                     return true;
-                }
             }
-            catch (Exception) // type name already present in imports
+            catch (Exception) 
             {
-                return true;
+                return false;
             }
 
             // class with same name exists in current package?
@@ -3758,20 +3778,15 @@ namespace ASCompletion.Completion
                 sci.BeginUndoAction();
                 try
                 {
-                    int offset = ASGenerator.InsertImport(import, true);
-                    // insert short name
-                    startPos += offset;
-                    endPos += offset;
-                    sci.SetSel(startPos, endPos);
-                    sci.ReplaceSel(checkShortName(import.Name));
-                    sci.SetSel(sci.CurrentPos, sci.CurrentPos);
+                    offset = ASGenerator.InsertImport(import, true);
                 }
                 finally
                 {
                     sci.EndUndoAction();
                 }
+                return true;
             }
-            return true;
+            return false;
         }
 
         private static string checkShortName(string name)

@@ -195,8 +195,15 @@ namespace CodeRefactor.Provider
         static public bool DoesMatchPointToTarget(ScintillaNet.ScintillaControl Sci, SearchMatch match, ASResult target, DocumentHelper associatedDocumentHelper)
         {
             if (Sci == null || target == null) return false;
-            bool matchMember = target.InFile != null && target.Member != null;
-            bool matchType = target.Member == null && target.IsStatic && target.Type != null;
+            FileModel targetInFile = null;
+
+            if (target.InFile != null)
+                targetInFile = target.InFile;
+            else if (target.Member != null && target.InClass == null)
+                targetInFile = target.Member.InFile;
+
+            Boolean matchMember = targetInFile != null && target.Member != null;
+            Boolean matchType = target.Member == null && target.IsStatic && target.Type != null;
             if (!matchMember && !matchType) return false;
 
             ASResult result = null;
@@ -215,8 +222,13 @@ namespace CodeRefactor.Provider
             if (matchMember)
             {
                 if (result.Member == null) return false;
-                return result.InFile.BasePath == target.InFile.BasePath && result.InFile.FileName == target.InFile.FileName 
-                    && result.Member.LineFrom == target.Member.LineFrom && result.Member.Name == target.Member.Name;
+
+                var resultInFile = result.InClass != null ? result.InFile : result.Member.InFile;
+
+                return resultInFile.BasePath == targetInFile.BasePath
+                    && resultInFile.FileName == targetInFile.FileName
+                    && result.Member.LineFrom == target.Member.LineFrom
+                    && result.Member.Name == target.Member.Name;
             }
             else // type
             {
@@ -242,7 +254,7 @@ namespace CodeRefactor.Provider
             Boolean currentFileOnly = false;
             // checks target is a member
             if (target == null || ((target.Member == null || String.IsNullOrEmpty(target.Member.Name))
-                && (target.Type == null || !CheckFlag(target.Type.Flags, FlagType.Class))))
+                && (target.Type == null || !CheckFlag(target.Type.Flags, FlagType.Class) && !target.Type.IsEnum())))
             {
                 return null;
             }
@@ -326,7 +338,11 @@ namespace CodeRefactor.Provider
         private static List<String> GetAllProjectRelatedFiles(IProject project)
         {
             List<String> files = new List<String>();
-            String filter = project.Language.ToLower() == "haxe" ? "*.hx" : "*.as";
+
+            string filter = GetSearchPatternFromLang(project.Language.ToLower());
+            if (string.IsNullOrEmpty(filter))
+                return files;
+
             foreach (String path in project.SourcePaths)
             {
                 String absolute = project.GetAbsolutePath(path);
@@ -342,6 +358,17 @@ namespace CodeRefactor.Provider
             return files;
         }
 
+        public static string GetSearchPatternFromLang(string lang)
+        {
+            if (lang == "haxe")
+                return "*.hx";
+            if (lang == "as2" || lang == "as3")
+                return "*.as";
+            if (lang == "loom")
+                return "*.ls";
+
+            return null;
+        }
 
         /// <summary>
         /// Generates an FRSearch to find all instances of the given member name.

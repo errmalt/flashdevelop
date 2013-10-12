@@ -7,23 +7,28 @@ using PluginCore.Localization;
 
 namespace BasicCompletion
 {
+    public enum AutoInsert
+    {
+        CPP = 0,
+        Never = 1,
+        Always = 2,
+    }
+
     [Serializable]
     public class Settings
     {
         private Boolean disableAutoCompletion = false;
-        private List<String> customLanguages = new List<String>();
-        public static List<String> DEFAULT_LANGUAGES = new List<String> { "jscript", "csharp", "python", "text", "cpp", "properties", "batch" };
-        
+        private AutoInsert autoInsertType = AutoInsert.CPP;
+
         /// <summary> 
-        /// Get and sets the SupportedLanguages
+        /// Get and sets the AutoInsertType
         /// </summary>
-        [DisplayName("Custom Languages")]
-        [LocalizedDescription("BasicCompletion.Description.CustomLanguages")]
-        [Editor("System.Windows.Forms.Design.StringCollectionEditor, System.Design, Version=2.0.0.0, Culture=neutral, PublicKeyToken=b03f5f7f11d50a3a", "System.Drawing.Design.UITypeEditor,System.Drawing, Version=2.0.0.0, Culture=neutral, PublicKeyToken=b03f5f7f11d50a3a")]
-        public List<String> CustomLanguages
+        [DisplayName("Auto Insert Type"), DefaultValue(AutoInsert.CPP)]
+        [LocalizedDescription("BasicCompletion.Description.AutoInsertType")]
+        public AutoInsert AutoInsertType
         {
-            get { return this.customLanguages; }
-            set { this.customLanguages = value; }
+            get { return this.autoInsertType; }
+            set { this.autoInsertType = value; }
         }
 
         /// <summary> 

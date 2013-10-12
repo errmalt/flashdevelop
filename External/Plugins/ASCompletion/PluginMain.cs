@@ -41,6 +41,7 @@ namespace ASCompletion
             EventType.FileSave |
             EventType.FileSwitch |
             EventType.SyntaxChange |
+            EventType.Completion |
             EventType.SyntaxDetect |
             EventType.UIRefresh |
             EventType.Keys |
@@ -241,6 +242,10 @@ namespace ASCompletion
                         ContextChanged();
                         return;
 
+                    case EventType.Completion:
+                        if (ASContext.Context.IsFileValid) e.Handled = true;
+                        return;
+
                     // some commands work all the time
                     case EventType.Command:
                         DataEvent de = e as DataEvent;
@@ -420,7 +425,7 @@ namespace ASCompletion
 
                             if (te.Value.IndexOf("$") >= 0 && reCostlyArgs.IsMatch(te.Value))
                             {
-                                ASResult result = ASComplete.CurrentResolvedContext.Result;
+                                ASResult result = ASComplete.CurrentResolvedContext.Result ?? new ASResult();
                                 details = new Hashtable();
                                 // Get closest list (Array or Vector)
                                 string closestListName = "", closestListItemType = "";

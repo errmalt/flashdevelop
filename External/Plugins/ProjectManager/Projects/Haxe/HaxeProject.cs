@@ -312,14 +312,15 @@ namespace ProjectManager.Projects.Haxe
                 }
             }
 
-            // debug 
+            // debug
             if (!release)
             {
                 pr.Add("-debug");
                 if (IsFlashOutput && MovieOptions.DebuggerSupported && CompilerOptions.EnableDebug)
                 {
-                    pr.Add("--no-inline");
                     pr.Add("-D fdb");
+                    if (CompilerOptions.NoInlineOnDebug)
+                        pr.Add("--no-inline");
                 }
 				if (IsCppOutput && MovieOptions.DebuggerSupported && CompilerOptions.EnableDebug)
 				{

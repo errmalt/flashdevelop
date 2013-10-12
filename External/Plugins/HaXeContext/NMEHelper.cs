@@ -51,7 +51,7 @@ namespace HaXeContext
             string args = "run " + builder + " run \"" + project.OutputPathAbsolute + "\" " + config;
             string haxelib = GetHaxelib(project);
 
-            if (config.StartsWith("html5") && ProjectManager.Actions.Webserver.Enabled) // webserver
+            if (config.StartsWith("html5") && ProjectManager.Actions.Webserver.Enabled && project.RawHXML != null) // webserver
             {
                 foreach (string line in project.RawHXML)
                 {
@@ -260,6 +260,11 @@ namespace HaXeContext
                 TraceManager.AddAsync(err, -3);
                 hxproj.RawHXML = null;
             }
+            else if (hxml.IndexOf("not installed") > 0)
+            {
+                TraceManager.AddAsync(hxml, -3);
+                hxproj.RawHXML = null;
+            }
             else hxproj.RawHXML = Regex.Split(hxml, "[\r\n]+");
         }
 
@@ -272,12 +277,8 @@ namespace HaXeContext
 
             // fix environment for command line tools
             string currentSDK = Path.GetDirectoryName(haxelib);
-            Environment.SetEnvironmentVariable("HAXEPATH", currentSDK);
-            string path = Environment.ExpandEnvironmentVariables("%PATH%");
-            path = path.Replace(currentSDK + ";", "");
-            Environment.SetEnvironmentVariable("PATH", currentSDK + ";" + path);
-            path = Environment.ExpandEnvironmentVariables("%PATH%");
-
+            Context.SetHaxeEnvironment(currentSDK);
+            
             return haxelib;
         }
     }

@@ -31,10 +31,10 @@ namespace HaXeContext
 
         static public string FLASH_OLD = "flash";
         static public string FLASH_NEW = "flash9";
-
+        static private string currentEnv;
+        static private string currentSDK;
+        
         private HaXeSettings hxsettings;
-        private string currentSDK;
-        private string currentEnv;
         private Dictionary<string, List<string>> haxelibsCache;
         private bool hasAIRSupport;
         private bool hasMobileSupport;
@@ -220,7 +220,7 @@ namespace HaXeContext
         /// <summary>
         /// Properly switch between different Haxe SDKs
         /// </summary>
-        private void SetHaxeEnvironment(string sdkPath)
+        static public void SetHaxeEnvironment(string sdkPath)
         {
             if (currentEnv == sdkPath) return;
             currentEnv = sdkPath;
@@ -600,7 +600,8 @@ namespace HaXeContext
                             {
                                 if (aClass.Name == module) needModule = false;
                                 item = aClass.ToMemberModel();
-                                if (tpackage != package) item.Name = item.Type;
+                                //if (tpackage != package) 
+                                item.Name = item.Type;
                                 fullList.Add(item);
                             }
                         }
@@ -785,7 +786,7 @@ namespace HaXeContext
             {
                 if (import.Name == name)
                 {
-                    if (import.Type != fullName) throw new Exception(TextHelper.GetString("Info.AmbiguousType"));
+                    //if (import.Type != fullName) throw new Exception(TextHelper.GetString("Info.AmbiguousType"));
                     return true;
                 }
                 else if (import.Name == "*" && import.Type.Replace("*", name) == fullName)
@@ -832,6 +833,12 @@ namespace HaXeContext
             }
             else 
             {
+                // search in file
+                if (inFile != null)
+                    foreach (ClassModel aClass in inFile.Classes)
+                        if (aClass.Name == cname)
+                            return aClass;
+
                 // search in imported classes
                 MemberList imports = ResolveImports(inFile);
                 foreach (MemberModel import in imports)
@@ -839,14 +846,18 @@ namespace HaXeContext
                     if (import.Name == cname)
                     {
                         if (import.Type.Length > import.Name.Length)
-                            package = import.Type.Substring(0, import.Type.Length - cname.Length - 1);
+                        {
+                            var type = import.Type;
+                            int temp = type.IndexOf('<');
+                            if (temp > 0) type = type.Substring(0, temp);
+                            package = type.Substring(0, type.LastIndexOf('.'));
+                        }
                         break;
                     }
                 }
             }
 
             return GetModel(package, cname, inPackage);
-            //return base.ResolveType(cname, inFile);
         }
 
         ClassModel ResolveTypeByPackage(string package, string cname, FileModel inFile, string inPackage)
@@ -868,7 +879,7 @@ namespace HaXeContext
         /// </summary>
         private ClassModel ResolveGenericType(string baseType, string indexType, FileModel inFile)
         {
-            ClassModel aClass = base.ResolveType(baseType, inFile);
+            ClassModel aClass = ResolveType(baseType, inFile);
             if (aClass.IsVoid()) return aClass;
 
             if (aClass.QualifiedName == "Dynamic")
@@ -1218,12 +1229,13 @@ namespace HaXeContext
                 // other classes in same package
                 if (features.hasPackages && cFile.Package != "")
                 {
+                    int pLen = cFile.Package.Length;
                     FileModel packageElements = ResolvePackage(cFile.Package, false);
                     if (packageElements != null)
                     {
                         foreach (MemberModel member in packageElements.Imports)
                         {
-                            if (member.Flags != FlagType.Package)
+                            if (member.Flags != FlagType.Package && member.Type.LastIndexOf('.') == pLen)
                             {
                                 if (qualify) member.Name = member.Type;
                                 elements.Add(member);
