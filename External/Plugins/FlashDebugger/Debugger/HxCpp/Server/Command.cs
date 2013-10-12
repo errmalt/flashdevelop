@@ -6,7 +6,7 @@ namespace FlashDebugger.Debugger.HxCpp.Server
 {
 	class Command : HaxeEnum
 	{
-		private Command(string constructor):base("debugger.Command", constructor) {}
+		private Command(string constructor):base("org.flashdevelop.cpp.debugger.Command", constructor) {}
 
 		public static Command Exit() { Command cmd = new Command("Exit"); return cmd; }
 		// Response: Exited
