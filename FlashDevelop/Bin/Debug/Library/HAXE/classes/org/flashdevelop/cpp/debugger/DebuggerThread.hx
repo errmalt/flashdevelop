@@ -1336,7 +1336,6 @@ private class TypeHelpers
         case TFunction:
 			return VariableValue.Item(getValueTypeName(value), Std.string(value), VariableNameList.Terminator);
         case TObject:
-			trace("TObjeect: " + Std.string(value));
 			var list: VariableNameList = VariableNameList.Terminator;
 			var fields = new Array<String>();
 			for (f in Reflect.fields(value)) {
