@@ -305,5 +305,10 @@ namespace FlashDebugger.Debugger.HxCpp
 		{
 			session.Request(Command.SetFrame(getFrames()[frameNumber].number));
 		}
+
+		public DataNode GetExpressionNode(string expr)
+		{
+			return new HxCppDataNode(expr, expr, session);
+		}
 	}
 }

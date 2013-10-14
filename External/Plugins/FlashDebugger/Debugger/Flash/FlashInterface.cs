@@ -10,6 +10,7 @@ using net.sf.jni4net;
 using PluginCore.Helpers;
 using PluginCore;
 using FlashDebugger.Controls;
+using flash.tools.debugger.expression;
 
 namespace FlashDebugger.Debugger.Flash
 {
@@ -840,9 +841,22 @@ namespace FlashDebugger.Debugger.Flash
 			FlashDataNode[] ret = new FlashDataNode[vars.Length];
 			for (int i = 0; i < vars.Length; i++)
 			{
-				ret[i] = new FlashDataNode(vars[i], PluginMain.debugManager.FlashInterface.Session);
+				ret[i] = new FlashDataNode(vars[i], Session);
 			}
 			return ret;
+		}
+
+		public DataNode GetExpressionNode(string expr)
+		{
+			IASTBuilder b = new ASTBuilder(false);
+			ValueExp exp = b.parse(new java.io.StringReader(expr));
+			var ctx = new ExpressionContext(Session, Session.getFrames()[PluginMain.debugManager.CurrentFrame]);
+			var obj = exp.evaluate(ctx);
+			if ((Variable)obj != null)
+			{
+				return new FlashDataNode((Variable)obj, expr, Session);
+			}
+			return null;
 		}
 
 		public void UpdateBreakpoints(List<BreakPointInfo> breakpoints)

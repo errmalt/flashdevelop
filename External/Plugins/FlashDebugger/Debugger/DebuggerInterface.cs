@@ -52,6 +52,7 @@ namespace FlashDebugger.Debugger
 		DbgFrame[] GetFrames();
 
 		DataNode[] GetVariableNodes(int frameNumber);
+		DataNode GetExpressionNode(string expr);
 
     }
 }

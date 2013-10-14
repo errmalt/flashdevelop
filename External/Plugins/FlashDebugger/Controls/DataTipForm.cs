@@ -35,12 +35,12 @@ namespace FlashDebugger.Controls
 			Tree.Collapsed += new EventHandler<TreeViewAdvEventArgs>(Tree_SizeChanged);
 		}
 
-		public void SetVariable(Variable variable, String path)
+		public void SetNode(DataNode node)
 		{
-            DataTree.Nodes.Clear();
-            DataTree.AddNode(new FlashDataNode(variable, path, PluginMain.debugManager.FlashInterface.Session));
-            DoResize();
-        }
+			DataTree.Nodes.Clear();
+			DataTree.AddNode(node);
+			DoResize();
+		}
 
 		private void Tree_SizeChanged(object sender, TreeViewAdvEventArgs e)
 		{

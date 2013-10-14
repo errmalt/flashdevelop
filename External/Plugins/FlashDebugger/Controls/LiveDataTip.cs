@@ -30,10 +30,10 @@ namespace FlashDebugger
 			UITools.Manager.OnMouseHover += new UITools.MouseHoverHandler(Manager_OnMouseHover);
 		}
 
-		public void Show(Point point, Variable variable, String path)
+		public void Show(Point point, DataNode node)
 		{
 			m_ToolTip.Location = point;
-			m_ToolTip.SetVariable(variable, path);
+			m_ToolTip.SetNode(node);
 			m_ToolTip.Visible = true;
 			m_ToolTip.Location = point;
 			m_ToolTip.BringToFront();
@@ -68,7 +68,8 @@ namespace FlashDebugger
 		private void Manager_OnMouseHover(ScintillaControl sci, Int32 position)
 		{
 			DebuggerManager debugManager = PluginMain.debugManager;
-			FlashInterface debuggerInterface = debugManager.FlashInterface;
+			DebuggerInterface debuggerInterface = debugManager.DebuggerInterface;
+			//FlashInterface debuggerInterface = debugManager.FlashInterface;
 			if (!PluginBase.MainForm.EditorMenu.Visible && debuggerInterface != null && debuggerInterface.IsDebuggerStarted && debuggerInterface.IsDebuggerSuspended)
 			{
 				if (debugManager.CurrentLocation != null && debugManager.CurrentLocation.File != null)
@@ -92,13 +93,10 @@ namespace FlashDebugger
 				{
 					try
 					{
-                        IASTBuilder b = new ASTBuilder(false);
-                        ValueExp exp = b.parse(new java.io.StringReader(leftword));
-                        var ctx = new ExpressionContext(debuggerInterface.Session, debuggerInterface.Session.getFrames()[debugManager.CurrentFrame]);
-                        var obj = exp.evaluate(ctx);
-						if ((Variable)obj != null)
+						DataNode node = debuggerInterface.GetExpressionNode(leftword);
+						if (node != null)
 						{
-							Show(dataTipPoint, (Variable)obj, leftword);
+							Show(dataTipPoint, node);
 						}
 					}
 					catch (Exception){}
