@@ -41,6 +41,7 @@ namespace FlashDebugger.Debugger
 		void Continue();
 		void Detach();
 		void Stop();
+		void Finish();
 
 		bool IsDebuggerStarted { get; }
 		bool IsDebuggerSuspended { get; }

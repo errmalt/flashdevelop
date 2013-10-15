@@ -16,6 +16,7 @@ using ProjectManager.Projects.Haxe;
 using FlashDebugger.Debugger.Flash;
 using FlashDebugger.Debugger;
 using FlashDebugger.Controls;
+using FlashDebugger.Debugger.HxCpp;
 
 namespace FlashDebugger
 {
@@ -47,16 +48,15 @@ namespace FlashDebugger
 		private BackgroundWorker bgWorker;
         private DebuggerInterface m_Interface;
         private FlashInterface m_FlashInterface;
-		private FlashDebugger.Debugger.HxCpp.HxCppInterface m_HxCppInterface;
+		private HxCppInterface m_HxCppInterface;
 		private DbgLocation m_CurrentLocation = null;
-		private Dictionary<String, String> m_PathMap = new Dictionary<String, String>();
         private Int32 m_CurrentFrame = 0;
 
         public DebuggerManager()
         {
 			m_FlashInterface = new FlashInterface();
             registerInterfaceEvents(m_FlashInterface);
-			m_HxCppInterface = new Debugger.HxCpp.HxCppInterface();
+			m_HxCppInterface = new HxCppInterface();
 			registerInterfaceEvents(m_HxCppInterface);
 			SelectDebugger(DebuggerEngine.Flash);
         }
@@ -196,7 +196,8 @@ namespace FlashDebugger
 					ErrorManager.ShowError("Internal Debugger Exception", ex);
 				});
             }
-			m_PathMap.Clear();
+			FlashSourceFile.Clear();
+			HxCppSourceFile.Clear();
         }
 
         #endregion
@@ -255,8 +256,10 @@ namespace FlashDebugger
         /// </summary>
         public void Cleanup()
         {
-			m_PathMap.Clear();
+			FlashSourceFile.Clear();
+			HxCppSourceFile.Clear();
 			m_FlashInterface.Cleanup();
+			// todo hxcpp cleanup?
         }
 
         /// <summary>
@@ -600,7 +603,7 @@ namespace FlashDebugger
 		/// </summary>
 		internal void Current_Click(Object sender, EventArgs e)
 		{
-			if (DebuggerInterface.IsDebuggerStarted && m_FlashInterface.IsDebuggerSuspended)
+			if (DebuggerInterface.IsDebuggerStarted && DebuggerInterface.IsDebuggerSuspended)
 			{
 				GotoCurrentLocation(false);
 			}
@@ -650,7 +653,7 @@ namespace FlashDebugger
         internal void Pause_Click(Object sender, EventArgs e)
         {
 			CurrentLocation = null;
-			m_FlashInterface.Pause();
+			m_Interface.Pause();
         }
 
         /// <summary>
@@ -659,7 +662,7 @@ namespace FlashDebugger
         internal void Finish_Click(Object sender, EventArgs e)
         {
 			CurrentLocation = null;
-			m_FlashInterface.Finish();
+			m_Interface.Finish();
 			UpdateMenuState(DebuggerState.Running);
 		}
 

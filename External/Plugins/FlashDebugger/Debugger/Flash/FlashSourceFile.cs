@@ -82,5 +82,10 @@ namespace FlashDebugger.Debugger.Flash
 			return null;
 		}
 
+		public static void Clear()
+		{
+			pathMap.Clear();
+		}
+
 	}
 }

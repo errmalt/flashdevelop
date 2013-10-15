@@ -79,8 +79,13 @@ namespace FlashDebugger.Debugger.HxCpp
 					}
 				}
 			}
+			// todo, add global class path from library
 			return null;
 		}
 
+		public static void Clear()
+		{
+			pathMap.Clear();
+		}
 	}
 }

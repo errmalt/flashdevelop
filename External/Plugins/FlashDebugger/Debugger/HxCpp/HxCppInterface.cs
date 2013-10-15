@@ -182,7 +182,10 @@ namespace FlashDebugger.Debugger.HxCpp
 			foreach (string f in fres)
 			{
 				String localPath = HxCppSourceFile.FromString(f).LocalPath;
-				map.Add(localPath, f);
+				if (localPath != null)
+				{
+					map.Add(localPath, f);
+				}
 			}
 
 			foreach (BreakPointInfo bp in breakpoints)
@@ -238,6 +241,11 @@ namespace FlashDebugger.Debugger.HxCpp
 			{
 				session.Request(Command.Exit());
 			}
+		}
+
+		public void Finish()
+		{
+			session.Request(Command.Finish(1));
 		}
 
 		private FrameList.Frame[] frames = null;
