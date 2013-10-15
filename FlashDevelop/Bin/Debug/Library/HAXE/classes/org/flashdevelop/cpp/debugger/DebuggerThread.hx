@@ -159,7 +159,7 @@ class DebuggerThread
 
                 case Detach:
                     emit(Detached, id);
-                    return;
+                    break;
 
                 case Files:
                     emit(this.files(), id);
