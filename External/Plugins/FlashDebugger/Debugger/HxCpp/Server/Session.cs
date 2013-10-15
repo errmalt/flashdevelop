@@ -122,8 +122,10 @@ namespace FlashDebugger.Debugger.HxCpp.Server
 				try
 				{
 					socket.Poll(-1, SelectMode.SelectRead);
-					if (!socket.Connected)
+					if (socket.Available == 0)
 					{
+						socket.Shutdown(SocketShutdown.Both);
+						socket.Disconnect(false);
 						// disconnected
 						lock (eventQ)
 						{
