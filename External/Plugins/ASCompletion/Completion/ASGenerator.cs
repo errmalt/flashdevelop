@@ -51,6 +51,9 @@ namespace ASCompletion.Completion
             if (ASContext.Context is ASContext)
                 (ASContext.Context as ASContext).UpdateCurrentFile(false); // update model
 
+            if ((ASContext.Context.CurrentClass.Flags & (FlagType.Enum | FlagType.Interface | FlagType.TypeDef)) > 0)
+                return;
+
             lookupPosition = -1;
             int position = Sci.CurrentPos;
             if (Sci.BaseStyleAt(position) == 19) // on keyword
@@ -274,17 +277,13 @@ namespace ASCompletion.Completion
                 }
 
 
-                // "assign var to statement" siggestion
+                // "assign var to statement" suggestion
                 int curLine = Sci.LineFromPosition(Sci.CurrentPos);
                 string ln = Sci.GetLine(curLine);
-                if (ln.Trim().Length > 0 && ln.TrimEnd().Length <= Sci.CurrentPos - Sci.PositionFromLine(curLine))
+                if (ln.Trim().Length > 0 && ln.TrimEnd().Length <= Sci.CurrentPos - Sci.PositionFromLine(curLine) && ln.IndexOf("=") == -1)
                 {
-                    Regex re = new Regex("=");
-                    Match m = re.Match(ln);
-                    if (!m.Success)
-                    {
-                        ShowAssignStatementToVarList(found);
-                    }
+                    ShowAssignStatementToVarList(found);
+                    return;
                 }
             }
 
@@ -297,14 +296,11 @@ namespace ASCompletion.Completion
                 bool hasToString = false;
                 foreach (MemberModel m in members)
                 {
-                    if ((m.Flags & FlagType.Constructor) > 0)
-                    {
+                    if (!hasConstructor && (m.Flags & FlagType.Constructor) > 0)
                         hasConstructor = true;
-                    }
-                    if ((m.Flags & FlagType.Function) > 0 && m.Name.Equals("toString"))
-                    {
+
+                    if (!hasToString && (m.Flags & FlagType.Function) > 0 && m.Name.Equals("toString"))
                         hasToString = true;
-                    }
                 }
 
                 if (!hasConstructor || !hasToString)
@@ -1270,9 +1266,6 @@ namespace ASCompletion.Completion
                 else if (resolve.Type != null && resolve.Type.Name != null)
                 {
                     type = resolve.Type.QualifiedName;
-
-                    //TODO: quick fix, resolve.Type.QualifiedName => Vector<T> for as3
-                    type = type.Replace("<", ".<");
                 }
 
                 if (resolve.Member != null && resolve.Member.Name != null)
@@ -1283,14 +1276,11 @@ namespace ASCompletion.Completion
 
             if (word != null && Char.IsDigit(word[0])) word = null;
 
-            if (!string.IsNullOrEmpty(word))
-            {
-                Match m = Regex.Match(type, "(<[^]]+>)");
-                if (m.Success)
-                    word = null;
-            }
+            if (!string.IsNullOrEmpty(word) && (string.IsNullOrEmpty(type) || Regex.IsMatch(type, "(<[^]]+>)")))
+                word = null;
 
-            if (type.Equals("void", StringComparison.OrdinalIgnoreCase)) type = null;
+            if (!string.IsNullOrEmpty(type) && type.Equals("void", StringComparison.OrdinalIgnoreCase))
+                type = null;
 
             if (varname == null) varname = GuessVarName(word, type);
 
@@ -3062,7 +3052,7 @@ namespace ASCompletion.Completion
 
         private static string GuessVarName(string name, string type)
         {
-            if (string.IsNullOrEmpty(name))
+            if (string.IsNullOrEmpty(name) && !string.IsNullOrEmpty(type))
             {
                 Match m = Regex.Match(type, "^([a-z0-9_$]+)", RegexOptions.IgnoreCase);
                 if (m.Success)
