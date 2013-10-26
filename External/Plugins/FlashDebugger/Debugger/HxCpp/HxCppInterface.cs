@@ -139,7 +139,7 @@ namespace FlashDebugger.Debugger.HxCpp
 					if (!isSuspended)
 					{
 						isSuspended = true; // TODO
-						if (PauseEvent != null) { PauseEvent(this); }
+						if (BreakpointEvent != null) { BreakpointEvent(this); }
 					}
 				}
 				if (e is Message.ThreadStarted)
@@ -215,6 +215,29 @@ namespace FlashDebugger.Debugger.HxCpp
 				}
 			}
 		}
+
+		public bool ShouldBreak(BreakPointInfo bpInfo)
+		{
+			if (bpInfo.Exp == null || bpInfo.Exp.Length == 0) return true;
+			Message ret = session.Request(Command.GetExpression(false, bpInfo.Exp));
+			if (ret is Message.Variable)
+			{
+				Message.Variable var_ = (Message.Variable)ret;
+				VariableValue.Item item = (VariableValue.Item)var_.value;
+				if (item.type == "Bool")
+				{
+					return item.value == "true";
+				}
+				// todo, other types
+			}
+			else
+			{
+				// an error
+			}
+
+			return true;
+		}
+
 
 		public void Next()
 		{

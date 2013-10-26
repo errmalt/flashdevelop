@@ -930,6 +930,55 @@ namespace FlashDebugger.Debugger.Flash
 			}
 		}
 
+		public bool ShouldBreak(BreakPointInfo bpInfo)
+		{
+			if (bpInfo.ExpressionInternalData == null || !(bpInfo.ExpressionInternalData is ValueExp))
+			{
+				if (bpInfo.Exp == null || bpInfo.Exp.Length == 0) return true;
+				try
+				{
+					// todo, we need to optimize in case of bad expession (to not clog the logs)
+					IASTBuilder builder = new ASTBuilder(false);
+					bpInfo.ExpressionInternalData = builder.parse(new java.io.StringReader(bpInfo.Exp));
+				}
+				catch (Exception e)
+				{
+					ErrorManager.ShowError(e);
+					return true;
+				}
+			}
+			ValueExp parsedExpression = bpInfo as ValueExp;
+			if (parsedExpression != null)
+			{
+				try
+				{
+					// frame SHOULD always be 0
+					var ctx = new ExpressionContext(Session, Session.getFrames()[PluginMain.debugManager.CurrentFrame]);
+					var val = parsedExpression.evaluate(ctx);
+					if (val is java.lang.Boolean)
+					{
+						return ((java.lang.Boolean)val).booleanValue();
+					}
+					if (val is Value)
+					{
+						return ECMA.toBoolean(((Value)val));
+					}
+					if (val is Variable)
+					{
+						return ECMA.toBoolean(((Variable)val).getValue());
+					}
+					throw new NotImplementedException(val.toString());
+				}
+				catch (Exception e)
+				{
+					TraceManager.AddAsync("[Problem in breakpoint: " + e.ToString() + "]", 4);
+					ErrorManager.ShowError(e);
+					return true;
+				}
+			}
+			return true;
+		}
+
 		private static String replaceInlineReferences(String text, System.Collections.IDictionary parameters)
 		{
 			if (parameters == null) return text;

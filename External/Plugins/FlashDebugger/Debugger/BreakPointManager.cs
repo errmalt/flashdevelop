@@ -131,32 +131,9 @@ namespace FlashDebugger
 			if (index >= 0)
 			{
 				BreakPointInfo bpInfo = m_BreakPointList[index];
-				if (bpInfo.ParsedExpression != null)
+				if (bpInfo.Exp != string.Empty)
 				{
-                    try
-                    {
-                        var ctx = new ExpressionContext(PluginMain.debugManager.FlashInterface.Session, PluginMain.debugManager.FlashInterface.Session.getFrames()[PluginMain.debugManager.CurrentFrame]);
-                        var val = bpInfo.ParsedExpression.evaluate(ctx);
-                        if (val is java.lang.Boolean)
-                        {
-                            return ((java.lang.Boolean)val).booleanValue();
-                        }
-                        if (val is Value)
-                        {
-                            return ECMA.toBoolean(((Value)val));
-                        }
-                        if (val is Variable)
-                        {
-                            return ECMA.toBoolean(((Variable)val).getValue());
-                        }
-                        throw new NotImplementedException(val.toString());
-                    }
-					catch (/*Expression*/Exception e)
-					{
-                        TraceManager.AddAsync("[Problem in breakpoint: "+e.ToString()+"]", 4);
-                        ErrorManager.ShowError(e);
-						return true;
-					}
+					return PluginMain.debugManager.DebuggerInterface.ShouldBreak(bpInfo/*, PluginMain.debugManager.CurrentFrame*/);
 				}
 				else return true;
 			}
@@ -393,7 +370,7 @@ namespace FlashDebugger
 		private object m_InternalData;
         private string m_FileFullPath;
 		private string m_ConditionalExpression;
-		private ValueExp m_ParsedExpression;
+		private object m_ExpressionInternalData;
 
         public string FileFullPath
         {
@@ -432,31 +409,15 @@ namespace FlashDebugger
 			set
 			{
                 m_ConditionalExpression = value;
-                m_ParsedExpression = null;
+                m_ExpressionInternalData = null;
 			}
         }
 
 		[XmlIgnore]
-		public ValueExp ParsedExpression
+		public object ExpressionInternalData
         {
-			get
-            {
-                if (m_ParsedExpression != null) return m_ParsedExpression;
-                if (m_ConditionalExpression != null && m_ConditionalExpression.Length > 0)
-                {
-                    try
-                    {
-                        // todo, we need to optimize in case of bad expession (to not clog the logs)
-                        IASTBuilder builder = new ASTBuilder(false);
-                        m_ParsedExpression = builder.parse(new java.io.StringReader(m_ConditionalExpression));
-                    }
-                    catch (Exception e)
-                    {
-                        ErrorManager.ShowError(e);
-                    }
-                }
-                return m_ParsedExpression; 
-            }
+			get { return m_ExpressionInternalData; }
+			set { m_ExpressionInternalData = value; }
         }
 
         public BreakPointInfo()
@@ -467,7 +428,7 @@ namespace FlashDebugger
 			m_bDeleted = false;
 			m_bEnabled = false;
 			m_InternalData = null;
-			m_ParsedExpression = null;
+			m_ExpressionInternalData = null;
 		}
 
         public BreakPointInfo(string fileFullPath, int line, string exp, Boolean bDeleted, Boolean bEnabled)
@@ -477,7 +438,7 @@ namespace FlashDebugger
 			m_bDeleted = bDeleted;
 			m_bEnabled = bEnabled;
 			m_InternalData = null;
-			m_ParsedExpression = null;
+			m_ExpressionInternalData = null;
 			Exp = exp;
 		}
 

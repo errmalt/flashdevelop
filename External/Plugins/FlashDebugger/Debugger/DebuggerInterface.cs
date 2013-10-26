@@ -55,5 +55,7 @@ namespace FlashDebugger.Debugger
 		DataNode[] GetVariableNodes(int frameNumber);
 		DataNode GetExpressionNode(string expr);
 
+		bool ShouldBreak(BreakPointInfo bpInfo);
+
     }
 }
