@@ -57,6 +57,7 @@ namespace FlashDebugger
 			m_FlashInterface.WatchpointEvent += new DebuggerEventHandler(flashInterface_WatchpointEvent);
 			m_FlashInterface.UnknownHaltEvent += new DebuggerEventHandler(flashInterface_UnknownHaltEvent);
             m_FlashInterface.ProgressEvent += new DebuggerProgressEventHandler(flashInterface_ProgressEvent);
+			m_FlashInterface.ThreadsEvent += new DebuggerEventHandler(m_FlashInterface_ThreadsEvent);
         }
 
         #region Startup
@@ -362,6 +363,7 @@ namespace FlashDebugger
 			PanelsHelper.pluginUI.TreeControl.Nodes.Clear();
 			PanelsHelper.stackframeUI.ClearItem();
 			PanelsHelper.watchUI.Clear();
+			PanelsHelper.threadsUI.ClearItem();
 			PluginMain.breakPointManager.ResetAll();
             PluginBase.MainForm.ProgressBar.Visible = false;
             PluginBase.MainForm.ProgressLabel.Visible = false;
@@ -434,6 +436,14 @@ namespace FlashDebugger
 			UpdateUI(DebuggerState.PauseHalt);
 		}
 
+		/// <summary>
+		/// 
+		/// </summary>
+		void m_FlashInterface_ThreadsEvent(object sender)
+		{
+			UpdateThreadsUI();
+		}
+
         /// <summary>
         /// 
         /// </summary>
@@ -453,6 +463,7 @@ namespace FlashDebugger
                 UpdateStackUI();
                 UpdateLocalsUI();
                 UpdateMenuState(state);
+				UpdateThreadsUI();
                 (PluginBase.MainForm as Form).Activate();
             }
             catch (PlayerDebugException ex)
@@ -507,6 +518,19 @@ namespace FlashDebugger
 				PanelsHelper.watchUI.UpdateElements();
 			}
 			else CurrentLocation = null;
+		}
+
+		private void UpdateThreadsUI()
+		{
+			if ((PluginBase.MainForm as Form).InvokeRequired)
+			{
+				(PluginBase.MainForm as Form).BeginInvoke((MethodInvoker)delegate()
+				{
+					UpdateThreadsUI();
+				});
+				return;
+			}
+			PanelsHelper.threadsUI.SetThreads(m_FlashInterface.IsolateSessions);
 		}
 
         /// <summary>
@@ -686,6 +710,7 @@ namespace FlashDebugger
 				m_FlashInterface.UpdateBreakpoints(PluginMain.breakPointManager.GetBreakPointUpdates());
 				m_FlashInterface.Continue();
 				UpdateMenuState(DebuggerState.Running);
+				UpdateThreadsUI();
             }
             catch (Exception ex)
             {

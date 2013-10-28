@@ -4729,9 +4729,6 @@ Custom locales must be an extension of a default locale, e.g. en-US.</value>
     <value>Add &amp;Source Path</value>
     <comment>Added after 3.3.3</comment>
   </data>
-  <data name="FlashDebugger.Label.ViewImmediatePanel" xml:space="preserve">
-    <value>Immediate Panel</value>
-  </data>
   <data name="FlashDebugger.Title.Immediate" xml:space="preserve">
     <value>Immediate</value>
   </data>
@@ -5042,5 +5039,11 @@ Custom locales must be an extension of a default locale, e.g. en-US.</value>
   <data name="FlashDevelop.Label.HaxeDocument" xml:space="preserve">
     <value>Haxe Document</value>
     <comment>Added after 4.4.3</comment>
+  </data>
+  <data name="FlashDebugger.Title.Threads" xml:space="preserve">
+    <value>Threads</value>
+  </data>
+  <data name="FlashDebugger.Label.ViewThreadsPanel" xml:space="preserve">
+    <value>Threads Panel</value>
   </data>
 </root>
