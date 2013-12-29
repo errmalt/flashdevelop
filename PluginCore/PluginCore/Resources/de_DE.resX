@@ -5037,4 +5037,10 @@ Eigene Sprachumgebungen müssen eine Erweiterung der Standard-Sprachumgebung sei
     <value>Haxe Dokument</value>
     <comment>Added after 4.4.3</comment>
   </data>
+  <data name="FlashDebugger.Title.Threads" xml:space="preserve">
+    <value>Threads</value>
+  </data>
+  <data name="FlashDebugger.Label.ViewThreadsPanel" xml:space="preserve">
+    <value>Threads Panel</value>
+  </data>
 </root>
