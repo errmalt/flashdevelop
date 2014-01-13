@@ -54,6 +54,10 @@ namespace FlashDebugger.Debugger.HxCpp.Server
 				}
 				if (listenSocket.Poll(period, SelectMode.SelectRead))
 				{
+					if (!listening)
+					{
+						continue;
+					}
 					Socket cli = listenSocket.Accept();
 					log("Accepted");
 					Session sess = new Session(cli);
@@ -66,9 +70,9 @@ namespace FlashDebugger.Debugger.HxCpp.Server
 
 		public void StopListen()
 		{
+			listening = false;
 			listenSocket.Close();
 			listenSocket = null;
-			listening = false;
 		}
 
 		public bool Listening
