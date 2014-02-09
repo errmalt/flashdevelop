@@ -163,7 +163,7 @@ namespace FlashDebugger
 							if (PluginBase.CurrentProject is HaxeProject)
 							{
 								HaxeProject hxproject = (HaxeProject)PluginBase.CurrentProject;
-								if (hxproject.IsCppOutput)
+								if (hxproject.IsCppOutput || (hxproject.IsNmeOutput && hxproject.TargetBuild == "windows"))
 								{
 									engine = DebuggerEngine.HxCpp;
 								}

@@ -130,7 +130,7 @@ namespace FlashDebugger
                 {
                     HaxeProject hproj = project as HaxeProject;
                     if (hproj.MovieOptions.Platform == HaxeMovieOptions.NME_PLATFORM
-                        && (hproj.TargetBuild != null && !hproj.TargetBuild.StartsWith("flash")))
+                        && (hproj.TargetBuild != null && !hproj.TargetBuild.StartsWith("flash") && hproj.TargetBuild != "windows"))
                         return false;
                 }
                 // Give a console warning for non external player...
@@ -343,7 +343,8 @@ namespace FlashDebugger
 			}
 			else
 			{
-				FlashInterface.StepResume();
+				m_Interface.Step();
+				//FlashInterface.StepResume();
 			}
 		}
 
