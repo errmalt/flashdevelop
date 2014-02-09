@@ -8,7 +8,7 @@ namespace FlashDebugger.Debugger.HxCpp.Server
 	{
 		public static StringList FromEnum(HaxeEnum haxeEnum)
 		{
-			if (haxeEnum.name != "org.flashdevelop.cpp.debugger.StringList") { throw new InvalidCastException("Trying to case HaxeEnum " + haxeEnum.name + " to org.flashdevelop.cpp.debugger.Message"); }
+			if (haxeEnum.name != "org.flashdevelop.cpp.debugger.StringList") { throw new InvalidCastException("Trying to cast HaxeEnum " + haxeEnum.name + " to org.flashdevelop.cpp.debugger.Message"); }
 			if (haxeEnum.constructor == "Terminator")
 			{
 				Terminator ret = new Terminator();
@@ -48,7 +48,7 @@ namespace FlashDebugger.Debugger.HxCpp.Server
 	{
 		public static BreakpointList FromEnum(HaxeEnum haxeEnum)
 		{
-			if (haxeEnum.name != "org.flashdevelop.cpp.debugger.BreakpointList") { throw new InvalidCastException("Trying to case HaxeEnum " + haxeEnum.name + " to org.flashdevelop.cpp.debugger.Message"); }
+			if (haxeEnum.name != "org.flashdevelop.cpp.debugger.BreakpointList") { throw new InvalidCastException("Trying to cast HaxeEnum " + haxeEnum.name + " to org.flashdevelop.cpp.debugger.Message"); }
 			if (haxeEnum.constructor == "Terminator")
 			{
 				Terminator ret = new Terminator();
@@ -94,7 +94,7 @@ namespace FlashDebugger.Debugger.HxCpp.Server
 	{
 		public static BreakpointLocationList FromEnum(HaxeEnum haxeEnum)
 		{
-			if (haxeEnum.name != "org.flashdevelop.cpp.debugger.BreakpointLocationList") { throw new InvalidCastException("Trying to case HaxeEnum " + haxeEnum.name + " to org.flashdevelop.cpp.debugger.Message"); }
+			if (haxeEnum.name != "org.flashdevelop.cpp.debugger.BreakpointLocationList") { throw new InvalidCastException("Trying to cast HaxeEnum " + haxeEnum.name + " to org.flashdevelop.cpp.debugger.Message"); }
 			if (haxeEnum.constructor == "Terminator")
 			{
 				Terminator ret = new Terminator();
@@ -155,7 +155,7 @@ namespace FlashDebugger.Debugger.HxCpp.Server
 	{
 		public static BreakpointStatusList FromEnum(HaxeEnum haxeEnum)
 		{
-			if (haxeEnum.name != "org.flashdevelop.cpp.debugger.BreakpointStatusList") { throw new InvalidCastException("Trying to case HaxeEnum " + haxeEnum.name + " to org.flashdevelop.cpp.debugger.Message"); }
+			if (haxeEnum.name != "org.flashdevelop.cpp.debugger.BreakpointStatusList") { throw new InvalidCastException("Trying to cast HaxeEnum " + haxeEnum.name + " to org.flashdevelop.cpp.debugger.Message"); }
 			if (haxeEnum.constructor == "Terminator")
 			{
 				Terminator ret = new Terminator();
@@ -280,7 +280,7 @@ namespace FlashDebugger.Debugger.HxCpp.Server
 	{
 		public static ThreadStatus FromEnum(HaxeEnum haxeEnum)
 		{
-			if (haxeEnum.name != "org.flashdevelop.cpp.debugger.ThreadStatus") { throw new InvalidCastException("Trying to case HaxeEnum " + haxeEnum.name + " to org.flashdevelop.cpp.debugger.Message"); }
+			if (haxeEnum.name != "org.flashdevelop.cpp.debugger.ThreadStatus") { throw new InvalidCastException("Trying to cast HaxeEnum " + haxeEnum.name + " to org.flashdevelop.cpp.debugger.Message"); }
 			if (haxeEnum.constructor == "Running")
 			{
 				Running ret = new Running();
@@ -359,7 +359,7 @@ namespace FlashDebugger.Debugger.HxCpp.Server
 	{
 		public static FrameList FromEnum(HaxeEnum haxeEnum)
 		{
-			if (haxeEnum.name != "org.flashdevelop.cpp.debugger.FrameList") { throw new InvalidCastException("Trying to case HaxeEnum " + haxeEnum.name + " to org.flashdevelop.cpp.debugger.Message"); }
+			if (haxeEnum.name != "org.flashdevelop.cpp.debugger.FrameList") { throw new InvalidCastException("Trying to cast HaxeEnum " + haxeEnum.name + " to org.flashdevelop.cpp.debugger.Message"); }
 			if (haxeEnum.constructor == "Terminator")
 			{
 				Terminator ret = new Terminator();
@@ -409,7 +409,7 @@ namespace FlashDebugger.Debugger.HxCpp.Server
 	{
 		public static ThreadWhereList FromEnum(HaxeEnum haxeEnum)
 		{
-			if (haxeEnum.name != "org.flashdevelop.cpp.debugger.ThreadWhereList") { throw new InvalidCastException("Trying to case HaxeEnum " + haxeEnum.name + " to org.flashdevelop.cpp.debugger.Message"); }
+			if (haxeEnum.name != "org.flashdevelop.cpp.debugger.ThreadWhereList") { throw new InvalidCastException("Trying to cast HaxeEnum " + haxeEnum.name + " to org.flashdevelop.cpp.debugger.Message"); }
 			if (haxeEnum.constructor == "Terminator")
 			{
 				Terminator ret = new Terminator();
@@ -453,7 +453,7 @@ namespace FlashDebugger.Debugger.HxCpp.Server
 	{
 		public static VariableValue FromEnum(HaxeEnum haxeEnum)
 		{
-			if (haxeEnum.name != "org.flashdevelop.cpp.debugger.VariableValue") { throw new InvalidCastException("Trying to case HaxeEnum " + haxeEnum.name + " to org.flashdevelop.cpp.debugger.Message"); }
+			if (haxeEnum.name != "org.flashdevelop.cpp.debugger.VariableValue") { throw new InvalidCastException("Trying to cast HaxeEnum " + haxeEnum.name + " to org.flashdevelop.cpp.debugger.Message"); }
 			if (haxeEnum.constructor == "Item")
 			{
 				Item ret = new Item();
@@ -495,7 +495,7 @@ namespace FlashDebugger.Debugger.HxCpp.Server
 	{
 		public static VariableName FromEnum(HaxeEnum haxeEnum)
 		{
-			if (haxeEnum.name != "org.flashdevelop.cpp.debugger.VariableName") { throw new InvalidCastException("Trying to case HaxeEnum " + haxeEnum.name + " to org.flashdevelop.cpp.debugger.Message"); }
+			if (haxeEnum.name != "org.flashdevelop.cpp.debugger.VariableName") { throw new InvalidCastException("Trying to cast HaxeEnum " + haxeEnum.name + " to org.flashdevelop.cpp.debugger.Message"); }
 			if (haxeEnum.constructor == "Variable")
 			{
 				Variable ret = new Variable();
@@ -526,7 +526,7 @@ namespace FlashDebugger.Debugger.HxCpp.Server
 	{
 		public static VariableNameList FromEnum(HaxeEnum haxeEnum)
 		{
-			if (haxeEnum.name != "org.flashdevelop.cpp.debugger.VariableNameList") { throw new InvalidCastException("Trying to case HaxeEnum " + haxeEnum.name + " to org.flashdevelop.cpp.debugger.Message"); }
+			if (haxeEnum.name != "org.flashdevelop.cpp.debugger.VariableNameList") { throw new InvalidCastException("Trying to cast HaxeEnum " + haxeEnum.name + " to org.flashdevelop.cpp.debugger.Message"); }
 			if (haxeEnum.constructor == "Terminator")
 			{
 				Terminator ret = new Terminator();
@@ -566,7 +566,7 @@ namespace FlashDebugger.Debugger.HxCpp.Server
 	{
 		public static Message FromEnum(HaxeEnum haxeEnum)
 		{
-			if (haxeEnum.name != "org.flashdevelop.cpp.debugger.Message") { throw new InvalidCastException("Trying to case HaxeEnum " + haxeEnum.name + " to org.flashdevelop.cpp.debugger.Message"); }
+			if (haxeEnum.name != "org.flashdevelop.cpp.debugger.Message") { throw new InvalidCastException("Trying to cast HaxeEnum " + haxeEnum.name + " to org.flashdevelop.cpp.debugger.Message"); }
 			if (haxeEnum.constructor == "ErrorInternal")
 			{
 				ErrorInternal ret = new ErrorInternal();
