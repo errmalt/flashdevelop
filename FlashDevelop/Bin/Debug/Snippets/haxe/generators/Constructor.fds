@@ -1,3 +1,0 @@
-$(Modifiers) function new($(Arguments)) $(CSLB){
-	$(EntryPoint);
-}

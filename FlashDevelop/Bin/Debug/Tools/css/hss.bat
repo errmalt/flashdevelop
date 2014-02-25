@@ -1,2 +1,0 @@
-@hss %*
-:: hss <options> in
