@@ -54,8 +54,16 @@ public staic function main()
 3. Seletct "Debug" configuration and "windows" target on the toolbar and press F5, to compile and run with debugging.
 
 
+Extra
+-----
+
+If you don't want to mess up your existing setup (you probably don't), there is a simple way to have all this contained it a folder. When you run FlashDevelop form the source tree, it will anyway be running in local mode so it should not touch your global settings and files.
+To run a separate Haxe instance you need to download it to a separate folder, then best to create a bat file to set HAXEPATH and PATH so that the other installation is used, not the global one.
+
 Problems?
 ---------
+FlashDevelop does not want to compile your project and complains something about haxelib?
+The nightly haxe has a haxelib.bat, but FD is looking for haxelib.exe. Use the one from latest haxe release.
 
 If your code does not compile, it's probably something with haxe nightly, or some problem with the setup. Unrelated to the debugger.
 I can't help much here, sorry.
@@ -66,3 +74,5 @@ If your code starts, but you don't see what you expect, start by enabling verbos
 - Verbose Output - True
 
 This will help analyze what is going on with the protocol.
+
+
