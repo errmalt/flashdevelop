@@ -49,10 +49,10 @@ namespace FlashDebugger.Debugger.Flash
 			{
 				if (ActiveSession == 1)
 				{
-				return m_Session.isSuspended();
-			}
+					return m_Session.isSuspended();
+				}
 				return runningIsolates[ActiveSession].i_Session.isSuspended();
-		}
+			}
 		}
 
 		public int suspendReason
@@ -717,7 +717,7 @@ namespace FlashDebugger.Debugger.Flash
 							{
 								//m_RequestPause = true;
 								BreakpointEvent(this);
-				}
+							}
 						}
 						else
 						{
@@ -890,19 +890,10 @@ namespace FlashDebugger.Debugger.Flash
 
 		public DbgLocation GetCurrentLocation()
 		{
-			if (ActiveSession == 1)
-			{
-				return getCurrentMainLocation();
-			}
-			return getCurrentIsolateLocation(ActiveSession);
-		}
-
-		internal virtual DbgLocation getCurrentMainLocation()
-		{
 			Location where = null;
 			try
 			{
-				Frame[] frames = m_Session.getFrames();
+				Frame[] frames = getFrames();
 
 				where = frames.Length > 0 ? frames[0].getLocation() : null;
 			}
@@ -912,24 +903,6 @@ namespace FlashDebugger.Debugger.Flash
 			}
 			return FlashLocation.FromLocation(where);
 		}
-
-		internal virtual DbgLocation getCurrentIsolateLocation(int i_id)
-        {
-            IsolateInfo ii = runningIsolates[i_id];
-
-            Location where = null;
-            try
-            {
-                Frame[] frames = ii.i_Session.getFrames();
-
-                where = frames.Length > 0 ? frames[0].getLocation() : null;
-            }
-            catch (PlayerDebugException)
-            {
-                // where == null
-            }
-			return FlashLocation.FromLocation(where);
-        }
 
 		public void Stop()
 		{
@@ -996,7 +969,7 @@ namespace FlashDebugger.Debugger.Flash
 			{
 				if (runningIsolates[ActiveSession].i_Session.isSuspended())
 				{
-					runningIsolates[ActiveSession].i_Session.resume();
+					runningIsolates[ActiveSession].i_Session.resume(); // why not stepContinue() ?
 				}
 				return;
 			}
@@ -1060,9 +1033,18 @@ namespace FlashDebugger.Debugger.Flash
 			}
 		}
 
+		private Frame[] getFrames()
+		{
+			if (ActiveSession == 1)
+			{
+				return m_Session.getFrames();
+			}
+			return runningIsolates[ActiveSession].i_Session.getFrames();
+		}
+
 		public DbgFrame[] GetFrames()
 		{
-			Frame[] frames =  m_Session.getFrames();
+			Frame[] frames = getFrames();
 			DbgFrame[] ret = new DbgFrame[frames.Length];
 			for (int i = 0; i < frames.Length; i++)
 			{
@@ -1074,9 +1056,10 @@ namespace FlashDebugger.Debugger.Flash
 		public Variable[] GetVariables(int frameNumber)
 		{
 			List<Variable> ret = new List<Variable>();
-			Variable thisValue = m_Session.getFrames()[frameNumber].getThis(m_Session);
-			Variable[] args = m_Session.getFrames()[frameNumber].getArguments(m_Session);
-			Variable[] locals = m_Session.getFrames()[frameNumber].getLocals(m_Session);
+			Frame[] frames = getFrames();
+			Variable thisValue = frames[frameNumber].getThis(m_Session);
+			Variable[] args = frames[frameNumber].getArguments(m_Session);
+			Variable[] locals = frames[frameNumber].getLocals(m_Session);
 			if (thisValue != null) ret.Add(thisValue);
 			if (args != null) ret.AddRange(args);
 			if (locals != null) ret.AddRange(locals);
@@ -1096,9 +1079,10 @@ namespace FlashDebugger.Debugger.Flash
 
 		public DataNode GetExpressionNode(string expr)
 		{
+			Frame[] frames = getFrames();
 			IASTBuilder b = new ASTBuilder(false);
 			ValueExp exp = b.parse(new java.io.StringReader(expr));
-			var ctx = new ExpressionContext(Session, Session.getFrames()[PluginMain.debugManager.CurrentFrame]);
+			var ctx = new ExpressionContext(Session, frames[PluginMain.debugManager.CurrentFrame]);
 			var obj = exp.evaluate(ctx);
 			if ((Variable)obj != null)
 			{

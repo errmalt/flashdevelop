@@ -12,6 +12,10 @@ namespace FlashDebugger.Debugger.Flash
 
 		public static DbgFrame FromFrame(Frame frame)
 		{
+			if (frame == null)
+			{
+				return null;
+			}
 			return new FlashFrame(frame);
 		}
 

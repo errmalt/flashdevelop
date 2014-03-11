@@ -15,6 +15,10 @@ namespace FlashDebugger.Debugger.Flash
 
 		public static DbgSourceFile FromSourceFile(SourceFile sourceFile)
 		{
+			if (sourceFile == null)
+			{
+				return null;
+			}
 			return new FlashSourceFile(sourceFile);
 		}
 

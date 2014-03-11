@@ -12,6 +12,10 @@ namespace FlashDebugger.Debugger.Flash
 
 		public static DbgLocation FromLocation(Location location)
 		{
+			if (location == null)
+			{
+				return null;
+			}
 			return new FlashLocation(location);
 		}
 
