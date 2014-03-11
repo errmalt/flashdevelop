@@ -99,6 +99,9 @@
   </ItemGroup>
   <ItemGroup>
     <Compile Include="Controls\ContinuedDataNode.cs" />
+    <Compile Include="Controls\ThreadsUI.cs">
+      <SubType>UserControl</SubType>
+    </Compile>
     <Compile Include="Controls\DataTreeModel.cs">
       <SubType>Code</SubType>
     </Compile>
@@ -219,6 +222,10 @@
       <Project>{4EBF2653-9654-4E40-880E-0046B3D6210E}</Project>
       <Name>ASCompletion</Name>
       <Private>False</Private>
+    </ProjectReference>
+    <ProjectReference Include="..\LayoutManager\LayoutManager.csproj">
+      <Project>{BD6AFBEA-DB64-432A-80F7-4672A7FF283E}</Project>
+      <Name>LayoutManager</Name>
     </ProjectReference>
     <ProjectReference Include="..\ProjectManager\ProjectManager.csproj">
       <Project>{78101C01-E186-4954-B1DD-DEBB7905FAD8}</Project>

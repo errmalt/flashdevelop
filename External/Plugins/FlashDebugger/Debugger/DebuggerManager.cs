@@ -59,6 +59,7 @@ namespace FlashDebugger
 			m_HxCppInterface = new HxCppInterface();
 			registerInterfaceEvents(m_HxCppInterface);
 			SelectDebugger(DebuggerEngine.Flash);
+			m_FlashInterface.ThreadsEvent += new DebuggerEventHandler(m_FlashInterface_ThreadsEvent);
         }
 
         private void registerInterfaceEvents(DebuggerInterface debugger)
@@ -249,6 +250,23 @@ namespace FlashDebugger
 
         #endregion
 
+		#region LayoutHelpers
+
+		/// <summary>
+		/// Check if old layout is sotred and restores it. It also deletes this temporary layout file.
+		/// </summary>
+		public void RestoreOldLayout()
+		{
+			String oldLayoutFile = Path.Combine(Path.Combine(PathHelper.DataDir, "FlashDebugger"), "oldlayout.fdl");
+			if (File.Exists(oldLayoutFile))
+			{
+				PluginBase.MainForm.CallCommand("RestoreLayout", oldLayoutFile);
+				File.Delete(oldLayoutFile);
+			}
+		}
+
+		#endregion
+
         #region FlashInterface Control
 
         /// <summary>
@@ -290,13 +308,21 @@ namespace FlashDebugger
 			UpdateMenuState(DebuggerState.Running);
             PluginBase.MainForm.ProgressBar.Visible = false;
             PluginBase.MainForm.ProgressLabel.Visible = false;
-			if (!PluginMain.settingObject.DisablePanelsAutoshow)
+			if (PluginMain.settingObject.SwitchToLayout != null)
+			{
+				// save current state
+				String oldLayoutFile = Path.Combine(Path.Combine(PathHelper.DataDir, "FlashDebugger"), "oldlayout.fdl");
+				PluginBase.MainForm.DockPanel.SaveAsXml(oldLayoutFile);
+				PluginBase.MainForm.CallCommand("RestoreLayout", PluginMain.settingObject.SwitchToLayout);
+			}
+			else if (!PluginMain.settingObject.DisablePanelsAutoshow)
 			{
                 PanelsHelper.watchPanel.Show();
-                PanelsHelper.immediatePanel.Show();
-                PanelsHelper.stackframePanel.Show();
                 PanelsHelper.pluginPanel.Show();
+                PanelsHelper.threadsPanel.Show();
+                PanelsHelper.immediatePanel.Show();
 				PanelsHelper.breakPointPanel.Show();
+                PanelsHelper.stackframePanel.Show();
 			}
 		}
 
@@ -315,17 +341,23 @@ namespace FlashDebugger
 			}
 			CurrentLocation = null;
 			UpdateMenuState(DebuggerState.Stopped);
-            if (!PluginMain.settingObject.DisablePanelsAutoshow)
+			if (PluginMain.settingObject.SwitchToLayout != null)
             {
+				RestoreOldLayout();
+			}
+            else if (!PluginMain.settingObject.DisablePanelsAutoshow)
+            {
+                PanelsHelper.watchPanel.Hide();
                 PanelsHelper.pluginPanel.Hide();
+                PanelsHelper.threadsPanel.Hide();
+                PanelsHelper.immediatePanel.Hide();
                 PanelsHelper.breakPointPanel.Hide();
                 PanelsHelper.stackframePanel.Hide();
-                PanelsHelper.watchPanel.Hide();
-                PanelsHelper.immediatePanel.Hide();
             }
 			PanelsHelper.pluginUI.TreeControl.Nodes.Clear();
 			PanelsHelper.stackframeUI.ClearItem();
 			PanelsHelper.watchUI.Clear();
+			PanelsHelper.threadsUI.ClearItem();
 			PluginMain.breakPointManager.ResetAll();
             PluginBase.MainForm.ProgressBar.Visible = false;
             PluginBase.MainForm.ProgressLabel.Visible = false;
@@ -337,7 +369,8 @@ namespace FlashDebugger
         private void flashInterface_BreakpointEvent(object sender)
 		{
 			DbgLocation loc = DebuggerInterface.GetCurrentLocation();
-			if (PluginMain.breakPointManager.ShouldBreak(loc.File, loc.Line))
+			// todo checking for loc here, but should handle swfloaded case and wait with breakpoint event
+			if (loc != null && PluginMain.breakPointManager.ShouldBreak(loc.File, loc.Line))
 			{
 				UpdateUI(DebuggerState.BreakHalt);
 			}
@@ -369,9 +402,10 @@ namespace FlashDebugger
         /// </summary>
         private void flashInterface_ScriptLoadedEvent(object sender)
 		{
+			// this was moved directly into flashInterface
             // force all breakpoints update after new as code loaded into debug movie 
-            PluginMain.breakPointManager.ForceBreakPointUpdates();
-			m_Interface.UpdateBreakpoints(PluginMain.breakPointManager.GetBreakPointUpdates());
+            //PluginMain.breakPointManager.ForceBreakPointUpdates();
+			//m_Interface.UpdateBreakpoints(PluginMain.breakPointManager.GetBreakPointUpdates());
 			m_Interface.Continue();
 		}
 
@@ -402,6 +436,24 @@ namespace FlashDebugger
         /// <summary>
         /// 
         /// </summary>
+		void m_FlashInterface_ThreadsEvent(object sender)
+		{
+			if (FlashInterface.IsDebuggerSuspended)
+			{
+				// TODO there will be redunandt calls
+				UpdateUI(DebuggerState.BreakHalt);
+			}
+			else
+			{
+				// TODO should get a signal that thread has changed, keep local number...
+				UpdateThreadsUI();
+				UpdateMenuState(DebuggerState.Running);
+			}
+		}
+
+        /// <summary>
+        /// 
+        /// </summary>
         private void UpdateUI(DebuggerState state)
 		{
 			if ((PluginBase.MainForm as Form).InvokeRequired)
@@ -418,6 +470,7 @@ namespace FlashDebugger
                 UpdateStackUI();
                 UpdateLocalsUI();
                 UpdateMenuState(state);
+				UpdateThreadsUI();
                 (PluginBase.MainForm as Form).Activate();
             }
             catch (PlayerDebugException ex)
@@ -462,6 +515,19 @@ namespace FlashDebugger
 				PanelsHelper.watchUI.UpdateElements();
 			}
 			else CurrentLocation = null;
+		}
+
+		private void UpdateThreadsUI()
+		{
+			if ((PluginBase.MainForm as Form).InvokeRequired)
+			{
+				(PluginBase.MainForm as Form).BeginInvoke((MethodInvoker)delegate()
+				{
+					UpdateThreadsUI();
+				});
+				return;
+			}
+			PanelsHelper.threadsUI.SetThreads(m_FlashInterface.IsolateSessions);
 		}
 
         /// <summary>
@@ -638,9 +704,11 @@ namespace FlashDebugger
             try
             {
 				CurrentLocation = null;
-				m_Interface.UpdateBreakpoints(PluginMain.breakPointManager.GetBreakPointUpdates());
+				// this should not be needed, as we update breakpoints right away
+				//m_Interface.UpdateBreakpoints(PluginMain.breakPointManager.GetBreakPointUpdates());
 				m_Interface.Continue();
 				UpdateMenuState(DebuggerState.Running);
+				UpdateThreadsUI();
             }
             catch (Exception ex)
             {

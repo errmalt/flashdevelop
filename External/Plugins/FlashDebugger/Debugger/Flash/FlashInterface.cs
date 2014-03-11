@@ -31,6 +31,7 @@ namespace FlashDebugger.Debugger.Flash
         public event DebuggerEventHandler WatchpointEvent;
         public event DebuggerEventHandler UnknownHaltEvent;
         public event DebuggerProgressEventHandler ProgressEvent;
+		public event DebuggerEventHandler ThreadsEvent;
 
 		#region Public Properties
 
@@ -46,8 +47,12 @@ namespace FlashDebugger.Debugger.Flash
 		{
 			get
 			{
+				if (ActiveSession == 1)
+				{
 				return m_Session.isSuspended();
 			}
+				return runningIsolates[ActiveSession].i_Session.isSuspended();
+		}
 		}
 
 		public int suspendReason
@@ -66,6 +71,31 @@ namespace FlashDebugger.Debugger.Flash
 			}
 		}
 
+		public Dictionary<int, IsolateInfo> IsolateSessions
+		{
+			get
+			{
+				return runningIsolates;
+			}
+		}
+
+		public int ActiveSession
+		{
+			get
+			{
+				return m_activeSession;
+			}
+			set
+			{
+				// todo
+				m_activeSession = value;
+				if (ThreadsEvent != null)
+				{
+					ThreadsEvent(this);
+				}
+			}
+		}
+
 		#endregion
 
 		#region Private Properties
@@ -79,6 +109,40 @@ namespace FlashDebugger.Debugger.Flash
 		private Boolean m_StepResume;
 		private EventWaitHandle m_SuspendWait = new EventWaitHandle(false, EventResetMode.ManualReset);
 		private Boolean m_SuspendWaiting;
+		private int m_activeSession; // 1 is m_session else lookup runningIsolates
+
+        // Isolates 
+        private Dictionary<int, IsolateInfo> runningIsolates;
+
+        private IsolateInfo addRunningIsolate(int i_id)
+        {
+            removeRunningIsolate(i_id);
+            runningIsolates[i_id] = new IsolateInfo();
+
+            return runningIsolates[i_id];
+        }
+
+        private void removeRunningIsolate(int i_id)
+        {
+			if (runningIsolates.ContainsKey(i_id))
+			{
+				runningIsolates.Remove(i_id);
+			}
+			if (ActiveSession == i_id)
+			{
+				ActiveSession = 1;
+			}
+        }
+
+        // Probably more info needed :)
+        public class IsolateInfo
+        {
+            public IsolateSession i_Session = null;
+			public Dictionary<BreakPointInfo, Location> breakpointLocations = new Dictionary<BreakPointInfo, Location>();
+        }
+
+		// breakpoint mappings
+		private Dictionary<BreakPointInfo, Location> breakpointLocations = new Dictionary<BreakPointInfo, Location>();
 
 		// Global Properties
 		private int m_HaltTimeout;
@@ -147,6 +211,7 @@ namespace FlashDebugger.Debugger.Flash
 		public void Start()
 		{
 			m_CurrentState = DebuggerState.Starting;
+			m_activeSession = 1;
             SessionManager mgr = Bootstrap.sessionManager();
 			//mgr.setDebuggerCallbacks(new FlashDebuggerCallbacks()); // obsoleted
 			mgr.setPreference(SessionManager_.PREF_GETVAR_RESPONSE_TIMEOUT, 5000);
@@ -193,6 +258,7 @@ namespace FlashDebugger.Debugger.Flash
                 while (!stop)
                 {
 					if (m_Session != null && m_Session.getEventCount() > 0) m_SuspendWaiting = false;
+
                     processEvents();
                     // not there, not connected
                     if (m_RequestStop || m_RequestDetach || !haveConnection())
@@ -202,6 +268,7 @@ namespace FlashDebugger.Debugger.Flash
 						{
 							// resume before we disconnect, this is in case of ExceptionHalt
 							m_Session.resume(); // just throw for now
+							if (ThreadsEvent != null) ThreadsEvent(this);
 						}
                         continue;
                     }
@@ -210,8 +277,15 @@ namespace FlashDebugger.Debugger.Flash
                         // resume execution (request fulfilled)
                         try
                         {
-                            if (m_StepResume) m_Session.stepContinue();
-                            else m_Session.resume();
+                            if (m_StepResume)
+                            {
+                                m_Session.stepContinue();
+                        }
+                            else
+                            {
+                                m_Session.resume();
+                            }
+							if (ThreadsEvent != null) ThreadsEvent(this);
                         }
                         catch (NotSuspendedException)
                         {
@@ -227,6 +301,7 @@ namespace FlashDebugger.Debugger.Flash
                         m_CurrentState = DebuggerState.Running;
                         continue;
                     }
+
                     if (m_Session.isSuspended())
                     {
                         /*
@@ -236,6 +311,7 @@ namespace FlashDebugger.Debugger.Flash
                         * This is definately the case with loading of multiple SWFs.  After the load
                         * we get info on the swf.
                         */
+
                         int tries = 3;
                         while (tries-- > 0 && m_Session.suspendReason() == SuspendReason_.Unknown)
                         {
@@ -247,13 +323,26 @@ namespace FlashDebugger.Debugger.Flash
                             catch (System.Threading.ThreadInterruptedException){}
                         }
                         m_SuspendWait.Reset();
+
                         switch (m_SuspendWaiting ? -1 : suspendReason)
                         {
                             case 1://SuspendReason_.Breakpoint:
                                 m_CurrentState = DebuggerState.BreakHalt;
                                 if (BreakpointEvent != null)
                                 {
-                                    BreakpointEvent(this);
+                                    m_RequestPause = true;
+									if (!IsDebuggerSuspended)
+									{
+										ActiveSession = 1;
+										BreakpointEvent(this);
+									}
+									else
+									{
+										if (ThreadsEvent != null)
+										{
+											ThreadsEvent(this);
+										}
+									}
                                 }
                                 else
                                 {
@@ -280,6 +369,11 @@ namespace FlashDebugger.Debugger.Flash
                                 } 
                                 catch (InProgressException) {}
                                 m_CurrentState = DebuggerState.PauseHalt;
+
+								// refresh breakpoints
+								clearBreakpoints();
+								UpdateBreakpoints(PluginMain.breakPointManager.BreakPoints);
+
                                 if (ScriptLoadedEvent != null)
                                 {
                                     ScriptLoadedEvent(this);
@@ -394,6 +488,7 @@ namespace FlashDebugger.Debugger.Flash
                         }
                     }
                     // sleep for a bit, then process our events.
+
                     try
                     {
                         System.Threading.Thread.Sleep(m_UpdateDelay);
@@ -441,6 +536,8 @@ namespace FlashDebugger.Debugger.Flash
 			m_RequestPause = false;
 			m_RequestResume = false;
 			m_StepResume = false;
+
+            runningIsolates = new Dictionary<int, IsolateInfo>();
 		}
 
 		/// <summary> If we still have a socket try to send an exit message
@@ -462,9 +559,11 @@ namespace FlashDebugger.Debugger.Flash
 				}
 				m_Session = null;
 			}
+            if (runningIsolates != null) runningIsolates.Clear();
             SessionManager mgr = Bootstrap.sessionManager();
-            if (mgr.isListening()) mgr.stopListening();
+            if (mgr != null && mgr.isListening()) mgr.stopListening();
             m_CurrentState = DebuggerState.Stopped;
+			clearBreakpoints();
         }
 
 		public virtual void Detach()
@@ -591,10 +690,44 @@ namespace FlashDebugger.Debugger.Flash
                     if (PluginMain.settingObject.VerboseOutput)
 					    dumpSwfUnloadedEvent((SwfUnloadedEvent)e);
 				}
+                else if (e is IsolateCreateEvent)
+                {
+                    TraceManager.AddAsync("Created Worker " + ((IsolateCreateEvent)e).isolate.getId());
+                    dumpIsolateCreateEvent((IsolateCreateEvent)e);
+                }
+                else if (e is IsolateExitEvent)
+                {
+                    TraceManager.AddAsync("Worker " + ((IsolateExitEvent)e).isolate.getId() + " Exited");
+                    dumpIsolateExitEvent((IsolateExitEvent)e);
+                }
 				else if (e is BreakEvent)
 				{
 					// we ignore these for now
+					BreakEvent be = (BreakEvent)e;
+					if (PluginMain.settingObject.VerboseOutput)
+						TraceManager.AddAsync("Worker " + be.isolateId + " BreakEvent");
+					if (be.isolateId > 1 && runningIsolates.ContainsKey(be.isolateId))
+					{
+						// switch only if we are not in break mode already!
+						if (!IsDebuggerSuspended)
+						{
+							// todo, check for valid id?
+							ActiveSession = be.isolateId;
+							if (BreakpointEvent != null)
+							{
+								//m_RequestPause = true;
+								BreakpointEvent(this);
 				}
+						}
+						else
+						{
+							if (ThreadsEvent != null)
+							{
+								ThreadsEvent(this);
+							}
+						}
+					}
+                }
 				else if (e is FileListModifiedEvent)
 				{
 					// we ignore this
@@ -681,7 +814,11 @@ namespace FlashDebugger.Debugger.Flash
 					sb.Append(e.information);
 				}
 			}
+
+            if (e.isolateId == 1)
 			TraceManager.AddAsync(sb.ToString(), 3);
+            else
+                TraceManager.AddAsync("Worker " + e.isolateId + ": " + sb.ToString(), 3);
 		}
 
 		/// <summary> Called when a swf has been loaded by the player</summary>
@@ -718,7 +855,49 @@ namespace FlashDebugger.Debugger.Flash
 			TraceManager.AddAsync(sb.ToString());
 		}
 
+        /// <summary> Perform the tasks need for when an isolate is created
+		/// </summary>
+        internal virtual void dumpIsolateCreateEvent(IsolateCreateEvent e)
+        {
+            IsolateSession i_Session = m_Session.getWorkerSession(e.isolate.getId());
+
+            i_Session.breakOnCaughtExceptions(true);
+
+            IsolateInfo ii = addRunningIsolate(e.isolate.getId());
+			ii.i_Session = i_Session;
+
+			UpdateIsolateBreakpoints(PluginMain.breakPointManager.BreakPoints, ii);
+
+			i_Session.resume();
+
+			if (ThreadsEvent != null)
+			{
+				ThreadsEvent(this);
+			}
+        }
+
+        /// <summary> Perform the tasks need for when an isolate has exited
+        /// </summary>
+        internal virtual void dumpIsolateExitEvent(IsolateExitEvent e)
+        {
+            removeRunningIsolate(e.isolate.getId());
+			if (ThreadsEvent != null)
+			{
+				ThreadsEvent(this);
+			}
+
+		}
+
 		public DbgLocation GetCurrentLocation()
+		{
+			if (ActiveSession == 1)
+			{
+				return getCurrentMainLocation();
+			}
+			return getCurrentIsolateLocation(ActiveSession);
+		}
+
+		internal virtual DbgLocation getCurrentMainLocation()
 		{
 			Location where = null;
 			try
@@ -733,6 +912,24 @@ namespace FlashDebugger.Debugger.Flash
 			}
 			return FlashLocation.FromLocation(where);
 		}
+
+		internal virtual DbgLocation getCurrentIsolateLocation(int i_id)
+        {
+            IsolateInfo ii = runningIsolates[i_id];
+
+            Location where = null;
+            try
+            {
+                Frame[] frames = ii.i_Session.getFrames();
+
+                where = frames.Length > 0 ? frames[0].getLocation() : null;
+            }
+            catch (PlayerDebugException)
+            {
+                // where == null
+            }
+			return FlashLocation.FromLocation(where);
+        }
 
 		public void Stop()
 		{
@@ -760,6 +957,14 @@ namespace FlashDebugger.Debugger.Flash
 
 		public void Next()
 		{
+			if (ActiveSession > 1)
+			{
+				if (runningIsolates[ActiveSession].i_Session.isSuspended())
+				{
+					runningIsolates[ActiveSession].i_Session.stepOver();
+				}
+				return;
+			}
 			if (m_Session.isSuspended())
 			{
 				m_Session.stepOver();
@@ -769,6 +974,14 @@ namespace FlashDebugger.Debugger.Flash
 
 		public void Step()
 		{
+			if (ActiveSession > 1)
+			{
+				if (runningIsolates[ActiveSession].i_Session.isSuspended())
+				{
+					runningIsolates[ActiveSession].i_Session.stepInto();
+				}
+				return;
+			}
 			if (m_Session.isSuspended())
 			{
 				m_Session.stepInto();
@@ -778,6 +991,15 @@ namespace FlashDebugger.Debugger.Flash
 
 		public void StepResume()
 		{
+			// fix me, needs to move to thread
+			if (ActiveSession > 1)
+			{
+				if (runningIsolates[ActiveSession].i_Session.isSuspended())
+				{
+					runningIsolates[ActiveSession].i_Session.resume();
+				}
+				return;
+			}
 			if (m_Session.isSuspended())
 			{
 				m_StepResume = true;
@@ -788,6 +1010,15 @@ namespace FlashDebugger.Debugger.Flash
 
 		public void Continue()
 		{
+			// fix me, needs to move to thread
+			if (ActiveSession > 1)
+			{
+				if (runningIsolates[ActiveSession].i_Session.isSuspended())
+				{
+					runningIsolates[ActiveSession].i_Session.resume();
+				}
+				return;
+			}
 			if (m_Session.isSuspended())
 			{
 				m_RequestResume = true;
@@ -797,6 +1028,15 @@ namespace FlashDebugger.Debugger.Flash
 
 		public void Pause()
 		{
+			// fix me, needs to move to thread
+			if (ActiveSession > 1)
+			{
+				if (!runningIsolates[ActiveSession].i_Session.isSuspended())
+				{
+					runningIsolates[ActiveSession].i_Session.suspend();
+				}
+				return;
+			}
 			if (!m_Session.isSuspended())
 			{
 				m_RequestPause = true;
@@ -805,6 +1045,14 @@ namespace FlashDebugger.Debugger.Flash
 
 		public void Finish()
 		{
+			if (ActiveSession > 1)
+			{
+				if (runningIsolates[ActiveSession].i_Session.isSuspended())
+				{
+					runningIsolates[ActiveSession].i_Session.stepOut();
+				}
+				return;
+			}
 			if (m_Session.isSuspended())
 			{
 				m_Session.stepOut();
@@ -859,12 +1107,26 @@ namespace FlashDebugger.Debugger.Flash
 			return null;
 		}
 
-		public void UpdateBreakpoints(List<BreakPointInfo> breakpoints)
+ 		public void UpdateBreakpoints(List<BreakPointInfo> breakpoints)
+  		{
+ 			commonUpdateBreakpoints(breakpoints, breakpointLocations, null);
+ 			foreach (IsolateInfo ii in IsolateSessions.Values)
+ 			{
+ 				UpdateIsolateBreakpoints(breakpoints, ii);
+ 			}
+ 		}
+ 
+		private void UpdateIsolateBreakpoints(List<BreakPointInfo> breakpoints, IsolateInfo ii)
+		{
+			commonUpdateBreakpoints(breakpoints, ii.breakpointLocations, ii.i_Session);
+		}
+
+		private void commonUpdateBreakpoints(List<BreakPointInfo> breakpoints, Dictionary<BreakPointInfo, Location> breakpointLocations, IsolateSession i_Session)
 		{
 			Dictionary<string, int> files = new Dictionary<string, int>();
 			foreach (BreakPointInfo bp in breakpoints)
 			{
-				if (bp.InternalData == null)
+				if (!breakpointLocations.ContainsKey(bp))
 				{
 					if (!bp.IsDeleted && bp.IsEnabled)
 					{
@@ -879,7 +1141,7 @@ namespace FlashDebugger.Debugger.Flash
 			if (nFiles > 0)
 			{
                 // reverse loop to take latest loded swf first, and ignore old swf.
-                SwfInfo[] swfInfo = m_Session.getSwfs();
+                SwfInfo[] swfInfo = (i_Session != null) ? i_Session.getSwfs() : m_Session.getSwfs();
                 for (int swfC = swfInfo.Length - 1; swfC >= 0; swfC--) 
 				{
                     SwfInfo swf = swfInfo[swfC];
@@ -907,15 +1169,17 @@ namespace FlashDebugger.Debugger.Flash
 					}
 				}
 			}
+
 			foreach (BreakPointInfo bp in breakpoints)
 			{
-				if (bp.InternalData == null)
+				if (!breakpointLocations.ContainsKey(bp))
 				{
 					if (bp.IsEnabled && !bp.IsDeleted)
 					{
 						if (files.ContainsKey(bp.FileFullPath) && files[bp.FileFullPath] != 0)
 						{
-							bp.InternalData = m_Session.setBreakpoint(files[bp.FileFullPath], bp.Line + 1);
+							Location l = (i_Session != null) ? i_Session.setBreakpoint(files[bp.FileFullPath], bp.Line + 1) : m_Session.setBreakpoint(files[bp.FileFullPath], bp.Line + 1);
+							breakpointLocations.Add(bp, l);
 						}
 					}
 				}
@@ -923,12 +1187,31 @@ namespace FlashDebugger.Debugger.Flash
 				{
 					if (bp.IsDeleted || !bp.IsEnabled)
 					{
-						m_Session.clearBreakpoint((Location)bp.InternalData);
-						bp.InternalData = null;
+						// todo, i_Session does not have a clearBreakpoint method, m_Session clears them all. optimize out extra loops
+						m_Session.clearBreakpoint(breakpointLocations[bp]);
+						breakpointLocations.Remove(bp);
 					}
 				}
 			}
 		}
+
+		private void clearBreakpoints()
+		{
+			if (IsDebuggerStarted)
+			{
+				foreach (Location l in m_Session.getBreakpointList())
+				{
+					m_Session.clearBreakpoint(l);
+				}
+			}
+            if (breakpointLocations != null) breakpointLocations.Clear();
+			if (IsolateSessions != null)
+                foreach (IsolateInfo ii in IsolateSessions.Values)
+			    {
+				    ii.breakpointLocations.Clear();
+			    }
+		}
+
 
 		public bool ShouldBreak(BreakPointInfo bpInfo)
 		{

@@ -6,6 +6,7 @@ using System.Collections.Generic;
 using FlashDebugger.Properties;
 using PluginCore.Localization;
 using PluginCore;
+using PluginCore.Managers;
 
 namespace FlashDebugger
 {
@@ -54,6 +55,9 @@ namespace FlashDebugger
             tempItem = new ToolStripMenuItem(TextHelper.GetString("Label.ViewImmediatePanel"), pluginImage, new EventHandler(this.OpenImmediatePanel));
             PluginBase.MainForm.RegisterShortcutItem("ViewMenu.ShowImmediate", tempItem);
             viewMenu.DropDownItems.Add(tempItem);
+			tempItem = new ToolStripMenuItem(TextHelper.GetString("Label.ViewThreadsPanel"), pluginImage, new EventHandler(this.OpenThreadsPanel));
+			PluginBase.MainForm.RegisterShortcutItem("ViewMenu.ShowThreads", tempItem);
+			viewMenu.DropDownItems.Add(tempItem);
 
             // Menu           
             ToolStripMenuItem debugMenu = (ToolStripMenuItem)PluginBase.MainForm.FindMenuItem("DebugMenu");
@@ -158,10 +162,15 @@ namespace FlashDebugger
             PanelsHelper.watchPanel.Show();
         }
 
-        public void OpenImmediatePanel(Object sender, System.EventArgs e)
-        {
-            PanelsHelper.immediatePanel.Show();
-        }
+		public void OpenImmediatePanel(Object sender, System.EventArgs e)
+		{
+			PanelsHelper.immediatePanel.Show();
+		}
+
+		public void OpenThreadsPanel(Object sender, System.EventArgs e)
+		{
+			PanelsHelper.threadsPanel.Show();
+		}
 
         /// <summary>
         /// 
@@ -172,7 +181,12 @@ namespace FlashDebugger
             {
                 PluginMain.debugManager.Continue_Click(sender, e);
             }
-            else PluginMain.debugManager.Start(/*false*/);
+            else 
+            {
+                var de = new DataEvent(EventType.Command, "ProjectManager.PlayOutput", null);
+                EventManager.DispatchEvent(this, de);
+                if (!de.Handled) PluginMain.debugManager.Start(/*false*/);
+            }
 		}
 
         /// <summary>
@@ -206,6 +220,7 @@ namespace FlashDebugger
                 });
                 return;
             }
+            Boolean hasChanged = CurrentState != state;
             CurrentState = state; // Set current now...
 			if (state == DebuggerState.Initializing || state == DebuggerState.Stopped)
 			{
@@ -219,8 +234,8 @@ namespace FlashDebugger
             //
 			if (state == DebuggerState.Initializing || state == DebuggerState.Stopped)
 			{
-                if (PluginMain.settingObject.StartDebuggerOnTestMovie) StartContinueButton.Enabled = StartContinueMenu.Enabled = false;
-                else StartContinueButton.Enabled = StartContinueMenu.Enabled = true;
+                /*if (PluginMain.settingObject.StartDebuggerOnTestMovie) StartContinueButton.Enabled = StartContinueMenu.Enabled = false;
+                else*/ StartContinueButton.Enabled = StartContinueMenu.Enabled = true;
 			}
             else if (state == DebuggerState.BreakHalt || state == DebuggerState.ExceptionHalt || state == DebuggerState.PauseHalt)
             {
@@ -242,7 +257,13 @@ namespace FlashDebugger
             DeleteAllBreakPointsMenu.Enabled = DisableAllBreakPointsMenu.Enabled = enabled;
             EnableAllBreakPointsMenu.Enabled = PanelsHelper.breakPointUI.Enabled = enabled;
 			StartRemoteDebuggingMenu.Enabled = (state == DebuggerState.Initializing || state == DebuggerState.Stopped);
-			PluginBase.MainForm.RefreshUI();
+            // Notify plugins of main states when state changes...
+            if (hasChanged && (state == DebuggerState.Running || state == DebuggerState.Stopped))
+            {
+                DataEvent de = new DataEvent(EventType.Command, "FlashDebugger." + state.ToString(), null);
+                EventManager.DispatchEvent(this, de);
+            }
+            PluginBase.MainForm.RefreshUI();
         }
 
         /// <summary>
