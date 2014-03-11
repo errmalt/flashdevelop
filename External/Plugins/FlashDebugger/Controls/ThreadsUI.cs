@@ -2,6 +2,7 @@
 using System.Windows.Forms;
 using flash.tools.debugger;
 using System.Collections.Generic;
+using FlashDebugger.Debugger;
 
 namespace FlashDebugger
 {
@@ -60,7 +61,7 @@ namespace FlashDebugger
         {
             foreach (ListViewItem item in lv.Items)
             {
-				if ((int)item.Tag == PluginMain.debugManager.FlashInterface.ActiveSession)
+				if ((int)item.Tag == PluginMain.debugManager.DebuggerInterface.ActiveThreadId)
 				{
 					item.Font = new System.Drawing.Font(item.Font, System.Drawing.FontStyle.Bold);
 				}
@@ -71,22 +72,14 @@ namespace FlashDebugger
             }
 		}
 
-        public void SetThreads(Dictionary<int, FlashDebugger.Debugger.Flash.FlashInterface.IsolateInfo> isolates)
+        public void SetThreads(DbgThread[] threads)
         {
             lv.Items.Clear();
-			// add primary -- flash specific
-			String title = "Main thread";
-			int image = PluginMain.debugManager.FlashInterface.Session.isSuspended() ? suspendedImageIndex : runningImageIndex;
-			lv.Items.Add(new ListViewItem(new string[] { "", title }, image));
-			lv.Items[lv.Items.Count - 1].Tag = 1;
-			foreach (KeyValuePair<int, FlashDebugger.Debugger.Flash.FlashInterface.IsolateInfo> ii_pair in isolates)
+			foreach (DbgThread thread in threads)
 			{
-				int i_id = ii_pair.Key;
-				FlashDebugger.Debugger.Flash.FlashInterface.IsolateInfo ii = ii_pair.Value;
-				title = "Worker " + i_id;
-				image = ii.i_Session.isSuspended() ? suspendedImageIndex : runningImageIndex;
-				lv.Items.Add(new ListViewItem(new string[] { "", title }, image));
-				lv.Items[lv.Items.Count - 1].Tag = i_id;
+				int image = thread.IsSuspended ? suspendedImageIndex : runningImageIndex;
+				lv.Items.Add(new ListViewItem(new string[] { "", thread.Name }, image));
+				lv.Items[lv.Items.Count - 1].Tag = thread.Id;
 			}
 			ActiveItem();
         }
@@ -97,7 +90,7 @@ namespace FlashDebugger
             {
 				if (lv.SelectedIndices.Count > 0)
 				{
-					PluginMain.debugManager.FlashInterface.ActiveSession = (int)lv.SelectedItems[0].Tag;
+					PluginMain.debugManager.DebuggerInterface.ActiveThreadId = (int)lv.SelectedItems[0].Tag;
 					ActiveItem();
 				}
 			}
@@ -107,7 +100,7 @@ namespace FlashDebugger
         {
 			if (lv.SelectedIndices.Count > 0)
 			{
-				PluginMain.debugManager.FlashInterface.ActiveSession = (int)lv.SelectedItems[0].Tag;
+				PluginMain.debugManager.DebuggerInterface.ActiveThreadId = (int)lv.SelectedItems[0].Tag;
 				ActiveItem();
 			}
         }

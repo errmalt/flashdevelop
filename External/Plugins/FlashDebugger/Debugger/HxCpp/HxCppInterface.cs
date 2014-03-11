@@ -341,5 +341,22 @@ namespace FlashDebugger.Debugger.HxCpp
 		{
 			return new HxCppDataNode(expr, expr, session);
 		}
+
+		public int ActiveThreadId
+		{
+			get
+			{
+				throw new NotImplementedException();
+			}
+			set
+			{
+				throw new NotImplementedException();
+			}
+		}
+
+		public DbgThread[] GetThreads()
+		{
+			throw new NotImplementedException();
+		}
 	}
 }

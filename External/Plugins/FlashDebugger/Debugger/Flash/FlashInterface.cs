@@ -47,11 +47,11 @@ namespace FlashDebugger.Debugger.Flash
 		{
 			get
 			{
-				if (ActiveSession == 1)
+				if (ActiveThreadId == 1)
 				{
 					return m_Session.isSuspended();
 				}
-				return runningIsolates[ActiveSession].i_Session.isSuspended();
+				return runningIsolates[ActiveThreadId].i_Session.isSuspended();
 			}
 		}
 
@@ -71,15 +71,7 @@ namespace FlashDebugger.Debugger.Flash
 			}
 		}
 
-		public Dictionary<int, IsolateInfo> IsolateSessions
-		{
-			get
-			{
-				return runningIsolates;
-			}
-		}
-
-		public int ActiveSession
+		public int ActiveThreadId
 		{
 			get
 			{
@@ -128,9 +120,9 @@ namespace FlashDebugger.Debugger.Flash
 			{
 				runningIsolates.Remove(i_id);
 			}
-			if (ActiveSession == i_id)
+			if (ActiveThreadId == i_id)
 			{
-				ActiveSession = 1;
+				ActiveThreadId = 1;
 			}
         }
 
@@ -333,7 +325,7 @@ namespace FlashDebugger.Debugger.Flash
                                     m_RequestPause = true;
 									if (!IsDebuggerSuspended)
 									{
-										ActiveSession = 1;
+										ActiveThreadId = 1;
 										BreakpointEvent(this);
 									}
 									else
@@ -712,7 +704,7 @@ namespace FlashDebugger.Debugger.Flash
 						if (!IsDebuggerSuspended)
 						{
 							// todo, check for valid id?
-							ActiveSession = be.isolateId;
+							ActiveThreadId = be.isolateId;
 							if (BreakpointEvent != null)
 							{
 								//m_RequestPause = true;
@@ -930,11 +922,11 @@ namespace FlashDebugger.Debugger.Flash
 
 		public void Next()
 		{
-			if (ActiveSession > 1)
+			if (ActiveThreadId > 1)
 			{
-				if (runningIsolates[ActiveSession].i_Session.isSuspended())
+				if (runningIsolates[ActiveThreadId].i_Session.isSuspended())
 				{
-					runningIsolates[ActiveSession].i_Session.stepOver();
+					runningIsolates[ActiveThreadId].i_Session.stepOver();
 				}
 				return;
 			}
@@ -947,11 +939,11 @@ namespace FlashDebugger.Debugger.Flash
 
 		public void Step()
 		{
-			if (ActiveSession > 1)
+			if (ActiveThreadId > 1)
 			{
-				if (runningIsolates[ActiveSession].i_Session.isSuspended())
+				if (runningIsolates[ActiveThreadId].i_Session.isSuspended())
 				{
-					runningIsolates[ActiveSession].i_Session.stepInto();
+					runningIsolates[ActiveThreadId].i_Session.stepInto();
 				}
 				return;
 			}
@@ -965,11 +957,11 @@ namespace FlashDebugger.Debugger.Flash
 		public void StepResume()
 		{
 			// fix me, needs to move to thread
-			if (ActiveSession > 1)
+			if (ActiveThreadId > 1)
 			{
-				if (runningIsolates[ActiveSession].i_Session.isSuspended())
+				if (runningIsolates[ActiveThreadId].i_Session.isSuspended())
 				{
-					runningIsolates[ActiveSession].i_Session.resume(); // why not stepContinue() ?
+					runningIsolates[ActiveThreadId].i_Session.resume(); // why not stepContinue() ?
 				}
 				return;
 			}
@@ -984,11 +976,11 @@ namespace FlashDebugger.Debugger.Flash
 		public void Continue()
 		{
 			// fix me, needs to move to thread
-			if (ActiveSession > 1)
+			if (ActiveThreadId > 1)
 			{
-				if (runningIsolates[ActiveSession].i_Session.isSuspended())
+				if (runningIsolates[ActiveThreadId].i_Session.isSuspended())
 				{
-					runningIsolates[ActiveSession].i_Session.resume();
+					runningIsolates[ActiveThreadId].i_Session.resume();
 				}
 				return;
 			}
@@ -1002,11 +994,11 @@ namespace FlashDebugger.Debugger.Flash
 		public void Pause()
 		{
 			// fix me, needs to move to thread
-			if (ActiveSession > 1)
+			if (ActiveThreadId > 1)
 			{
-				if (!runningIsolates[ActiveSession].i_Session.isSuspended())
+				if (!runningIsolates[ActiveThreadId].i_Session.isSuspended())
 				{
-					runningIsolates[ActiveSession].i_Session.suspend();
+					runningIsolates[ActiveThreadId].i_Session.suspend();
 				}
 				return;
 			}
@@ -1018,11 +1010,11 @@ namespace FlashDebugger.Debugger.Flash
 
 		public void Finish()
 		{
-			if (ActiveSession > 1)
+			if (ActiveThreadId > 1)
 			{
-				if (runningIsolates[ActiveSession].i_Session.isSuspended())
+				if (runningIsolates[ActiveThreadId].i_Session.isSuspended())
 				{
-					runningIsolates[ActiveSession].i_Session.stepOut();
+					runningIsolates[ActiveThreadId].i_Session.stepOut();
 				}
 				return;
 			}
@@ -1035,11 +1027,11 @@ namespace FlashDebugger.Debugger.Flash
 
 		private Frame[] getFrames()
 		{
-			if (ActiveSession == 1)
+			if (ActiveThreadId == 1)
 			{
 				return m_Session.getFrames();
 			}
-			return runningIsolates[ActiveSession].i_Session.getFrames();
+			return runningIsolates[ActiveThreadId].i_Session.getFrames();
 		}
 
 		public DbgFrame[] GetFrames()
@@ -1094,7 +1086,7 @@ namespace FlashDebugger.Debugger.Flash
  		public void UpdateBreakpoints(List<BreakPointInfo> breakpoints)
   		{
  			commonUpdateBreakpoints(breakpoints, breakpointLocations, null);
- 			foreach (IsolateInfo ii in IsolateSessions.Values)
+			foreach (IsolateInfo ii in runningIsolates.Values)
  			{
  				UpdateIsolateBreakpoints(breakpoints, ii);
  			}
@@ -1189,8 +1181,8 @@ namespace FlashDebugger.Debugger.Flash
 				}
 			}
             if (breakpointLocations != null) breakpointLocations.Clear();
-			if (IsolateSessions != null)
-                foreach (IsolateInfo ii in IsolateSessions.Values)
+			if (runningIsolates != null)
+				foreach (IsolateInfo ii in runningIsolates.Values)
 			    {
 				    ii.breakpointLocations.Clear();
 			    }
@@ -1244,6 +1236,20 @@ namespace FlashDebugger.Debugger.Flash
 				}
 			}
 			return true;
+		}
+
+		public DbgThread[] GetThreads()
+		{
+			DbgThread[] ret = new DbgThread[runningIsolates.Count + 1];
+
+			ret[0] = FlashThread.FromSession(m_Session);
+			int k = 1;
+			foreach (KeyValuePair<int, IsolateInfo> ii_pair in runningIsolates)
+			{
+				ret[k] = FlashThread.FromIsolateSession(ii_pair.Key, ii_pair.Value.i_Session);
+			}
+
+			return ret;
 		}
 
 		private static String replaceInlineReferences(String text, System.Collections.IDictionary parameters)

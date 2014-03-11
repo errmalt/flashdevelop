@@ -140,12 +140,14 @@
     </Compile>
     <Compile Include="Debugger\DbgFrame.cs" />
     <Compile Include="Debugger\DbgLocation.cs" />
+    <Compile Include="Debugger\DbgThread.cs" />
     <Compile Include="Debugger\DebuggerInterface.cs" />
     <Compile Include="Debugger\DebuggerManager.cs" />
     <Compile Include="Debugger\ExpressionContext.cs" />
     <Compile Include="Debugger\Flash\FlashFrame.cs" />
     <Compile Include="Debugger\Flash\FlashLocation.cs" />
     <Compile Include="Debugger\Flash\FlashSourceFile.cs" />
+    <Compile Include="Debugger\Flash\FlashThread.cs" />
     <Compile Include="Debugger\HxCpp\HxCppDataNode.cs" />
     <Compile Include="Debugger\HxCpp\HxCppFrame.cs" />
     <Compile Include="Debugger\HxCpp\HxCppLocation.cs" />

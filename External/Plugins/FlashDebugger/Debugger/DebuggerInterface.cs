@@ -57,5 +57,8 @@ namespace FlashDebugger.Debugger
 
 		bool ShouldBreak(BreakPointInfo bpInfo);
 
+		DbgThread[] GetThreads();
+		int ActiveThreadId { get; set; }
+
     }
 }

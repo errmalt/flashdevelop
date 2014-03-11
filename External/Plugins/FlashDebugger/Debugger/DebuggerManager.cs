@@ -527,7 +527,7 @@ namespace FlashDebugger
 				});
 				return;
 			}
-			PanelsHelper.threadsUI.SetThreads(m_FlashInterface.IsolateSessions);
+			PanelsHelper.threadsUI.SetThreads(m_Interface.GetThreads());
 		}
 
         /// <summary>
