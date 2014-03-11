@@ -172,6 +172,19 @@ namespace FlashViewer
             {
                 this.settingObject.PlayerPath = null;
             }
+            // Try to find player path from AppMan archive
+            if (String.IsNullOrEmpty(this.settingObject.PlayerPath))
+            {
+                string appManDir = Path.Combine(PathHelper.BaseDir, @"Apps\flashsa");
+                if (Directory.Exists(appManDir))
+                {
+                    string[] exeFiles = Directory.GetFiles(appManDir, "*.exe", SearchOption.AllDirectories);
+                    foreach (string exeFile in exeFiles)
+                    {
+                        this.settingObject.PlayerPath = exeFile;
+                    }
+                }
+            }
             // Try to find player path from: Tools/flexlibs/
             if (String.IsNullOrEmpty(this.settingObject.PlayerPath))
             {
@@ -243,6 +256,7 @@ namespace FlashViewer
                 {
                     String action = evnt.Action;
                     String[] args = evnt.Data != null ? evnt.Data.ToString().Split(',') : null;
+                    if (args == null || String.IsNullOrEmpty(args[0])) return;
                     if (action == "FlashViewer.Default")
                     {
                         switch (this.settingObject.DisplayStyle)
@@ -263,8 +277,13 @@ namespace FlashViewer
                     switch (action)
                     {
                         case "FlashViewer.Popup":
-                            Int32 width = args.Length > 0 ? Convert.ToInt32(args[1]) : 800;
-                            Int32 height = args.Length > 1 ? Convert.ToInt32(args[2]) : 600;
+                            Int32 width = 800;
+                            Int32 height = 600;
+                            if (args.Length >= 3)
+                            {
+                                Int32.TryParse(args[1], out width);
+                                Int32.TryParse(args[2], out height);
+                            }
                             this.CreatePopup(args[0], new Size(width, height));
                             break;
 

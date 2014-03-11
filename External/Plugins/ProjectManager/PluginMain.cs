@@ -270,10 +270,12 @@ namespace ProjectManager
             pluginUI.Menu.CloseProject.Click += delegate { CloseProject(false); };
             pluginUI.Menu.Properties.Click += delegate { OpenProjectProperties(); };
             pluginUI.Menu.ShellMenu.Click += delegate { TreeShowShellMenu(); };
+            pluginUI.Menu.CommandPrompt.Click += delegate { TreeShowCommandPrompt(); };
             pluginUI.Menu.BuildProjectFile.Click += delegate { BackgroundBuild(); };
             pluginUI.Menu.BuildProjectFiles.Click += delegate { BackgroundBuild(); };
             pluginUI.Menu.BuildAllProjects.Click += delegate { FullBuild(); };
             pluginUI.Menu.TestAllProjects.Click += delegate { TestBuild(); };
+            pluginUI.Menu.FindAndReplace.Click += delegate { FindAndReplace(); };
             pluginUI.Menu.FindInFiles.Click += delegate { FindInFiles(); };
             pluginUI.Menu.CopyClassName.Click += delegate { CopyClassName(); };
             pluginUI.Menu.AddSourcePath.Click += delegate { AddSourcePath(); };
@@ -305,6 +307,7 @@ namespace ProjectManager
                     menus.TargetBuildSelector.Items.Insert(0, target);
                 FlexCompilerShell.Cleanup();
                 project.TargetBuild = menus.TargetBuildSelector.Text;
+                project.UpdateVars(false);
                 projectActions.UpdateASCompletion(MainForm, project);
             }
         }
@@ -353,21 +356,30 @@ namespace ProjectManager
                 case EventType.ProcessArgs:
                     project = activeProject; // replace arguments using active project data
 
-                    if (!ProjectCreator.IsRunning && project != null && te.Value.IndexOf('$') >= 0)
+                    if (!ProjectCreator.IsRunning)
                     {
-                        // steal macro names and values from the very useful BuildEvent macros
-                        BuildEventVars vars = new BuildEventVars(project);
+                        if (project != null && te.Value.IndexOf('$') >= 0)
+                        {
+                            // steal macro names and values from the very useful BuildEvent macros
+                            BuildEventVars vars = new BuildEventVars(project);
 
-                        vars.AddVar("CompilerConfiguration", menus.ConfigurationSelector.Text);
-                        vars.AddVar("BuildConfiguration", pluginUI.IsTraceDisabled ? "release" : "debug");
-                        vars.AddVar("BuildIPC", buildActions.IPCName);
+                            vars.AddVar("CompilerConfiguration", menus.ConfigurationSelector.Text);
+                            vars.AddVar("BuildIPC", buildActions.IPCName);
 
-                        foreach (BuildEventInfo info in vars.GetVars())
-                            te.Value = te.Value.Replace(info.FormattedName, info.Value);
+                            foreach (BuildEventInfo info in vars.GetVars())
+                                te.Value = te.Value.Replace(info.FormattedName, info.Value);
 
-                        // give the FileActions class an opportunity to process arguments
-                        // it may know about (if it was responsible for creating the file)
-                        te.Value = fileActions.ProcessArgs(project, te.Value);
+                            // give the FileActions class an opportunity to process arguments
+                            // it may know about (if it was responsible for creating the file)
+                            te.Value = fileActions.ProcessArgs(project, te.Value);
+                        }
+                        else
+                        {
+                            BuildEventVars vars = new BuildEventVars(null);
+                            vars.AddVar("ProjectDir", PluginBase.MainForm.WorkingDirectory);
+                            foreach (BuildEventInfo info in vars.GetVars())
+                                te.Value = te.Value.Replace(info.FormattedName, info.Value);
+                        }
                     }
                     break;
 
@@ -428,7 +440,7 @@ namespace ProjectManager
                     {
                         if (de.Data != null && File.Exists((string)de.Data))
                         {
-                            projectActions.OpenProjectSilent((string)de.Data);
+                            OpenProjectSilent((string)de.Data);
                         }
                         else OpenProject();
                         e.Handled = true;
@@ -465,7 +477,11 @@ namespace ProjectManager
                     }
                     else if (de.Action == ProjectManagerCommands.PlayOutput)
                     {
-                        OpenSwf((string)de.Data);
+                        if (activeProject != null || de.Data != null)
+                        {
+                            OpenSwf((string)de.Data);
+                            de.Handled = true;
+                        }
                     }
                     else if (de.Action == ProjectManagerCommands.RestartFlexShell)
                     {
@@ -763,7 +779,7 @@ namespace ProjectManager
             if (path == null)
             {
                 if (project == null) return;
-                path = project.OutputPath;
+                path = project.OutputPathAbsolute;
             }
             if (project == null) // use default player
             {
@@ -774,7 +790,6 @@ namespace ProjectManager
 
             int w = project.MovieOptions.Width;
             int h = project.MovieOptions.Height;
-            bool isOutput = path.ToLower() == project.OutputPathAbsolute.ToLower();
             if (path.StartsWith(project.Directory)) 
                 path = project.FixDebugReleasePath(path);
 
@@ -1164,7 +1179,7 @@ namespace ProjectManager
             // special behavior if this is a fake export node inside a SWF file
             ExportNode node = Tree.SelectedNode as ExportNode;
             string path = (node != null) ? node.ContainingSwfPath : Tree.SelectedPath;
-            Project project = Tree.ProjectOf(path);
+            Project project = Tree.ProjectOf(path) ?? Tree.ProjectOf(Tree.SelectedNode);
             if (project != null)
                 projectActions.InsertFile(MainForm, project, path, node);
             // TODO better handling / report invalid action
@@ -1175,7 +1190,7 @@ namespace ProjectManager
             // we want to deselect all nodes when toggling library so you can see
             // them turn blue to get some feedback
             string[] selectedPaths = Tree.SelectedPaths;
-            Project project = Tree.ProjectOf(selectedPaths[0]);
+            Project project = Tree.ProjectOf(Tree.SelectedNode);
             Tree.SelectedNodes = null;
             if (project != null)
                 projectActions.ToggleLibraryAsset(project, selectedPaths);
@@ -1227,10 +1242,10 @@ namespace ProjectManager
 
         private void TreeLibraryOptions()
         {
-            Project project = Tree.ProjectOf(Tree.SelectedAsset.Path);
+            Project project = Tree.ProjectOf(Tree.SelectedNode);
             if (project != null)
             {
-                LibraryAssetDialog dialog = new LibraryAssetDialog(Tree.SelectedAsset, project);
+                LibraryAssetDialog dialog = new LibraryAssetDialog(/*Tree.SelectedAsset*/ project.GetAsset(Tree.SelectedPath), project);
                 if (dialog.ShowDialog(pluginUI) == DialogResult.OK)
                 {
                     Tree.SelectedNode.Refresh(false);
@@ -1265,10 +1280,9 @@ namespace ProjectManager
 
         private void TreeHideItems()
         {
-            Project project = Tree.ProjectOf(Tree.SelectedPath);
+            Project project = Tree.ProjectOf(Tree.SelectedNode);
             if (project != null)
                 projectActions.ToggleHidden(project, Tree.SelectedPaths);
-            // TODO we should be able to hide elements from a classpath reference
         }
 
         public void ToggleShowHidden()
@@ -1283,7 +1297,21 @@ namespace ProjectManager
             DataEvent de = new DataEvent(EventType.Command, ProjectManagerEvents.UserRefreshTree, Tree);
             EventManager.DispatchEvent(this, de);
 
+            Project project = activeProject; // TODO apply to all projects?
+            projectActions.UpdateASCompletion(MainForm, project);
+
             Tree.RefreshTree();
+        }
+
+        /// <summary>
+        /// Shows the command prompt
+        /// </summary>
+        private void TreeShowCommandPrompt()
+        {
+            ProcessStartInfo cmdPrompt = new ProcessStartInfo();
+            cmdPrompt.FileName = "cmd.exe";
+            cmdPrompt.WorkingDirectory = Tree.SelectedPath;
+            Process.Start(cmdPrompt);
         }
 
         /// <summary>
@@ -1410,6 +1438,15 @@ namespace ProjectManager
             if (copyCP.Handled) // UI needs refresh on clipboard change...
             {
                 PluginBase.MainForm.RefreshUI();
+            }
+        }
+
+        private void FindAndReplace()
+        {
+            String path = Tree.SelectedPath;
+            if (path != null && File.Exists(path))
+            {
+                PluginBase.MainForm.CallCommand("FindAndReplaceFrom", path);
             }
         }
 

@@ -11,6 +11,7 @@ using WeifenLuo.WinFormsUI.Docking;
 using PluginCore.Utilities;
 using PluginCore.Managers;
 using PluginCore.Helpers;
+using PluginCore.Controls;
 using PluginCore;
 
 namespace FlashLogViewer
@@ -61,7 +62,7 @@ namespace FlashLogViewer
 		/// </summary>
 		private void InitializeComponent() 
         {
-            this.toolStrip = new System.Windows.Forms.ToolStrip();
+            this.toolStrip = new PluginCore.Controls.ToolStripEx();
             this.toggleButton = new System.Windows.Forms.ToolStripButton();
             this.topMostButton = new System.Windows.Forms.ToolStripButton();
             this.clearFilterButton = new System.Windows.Forms.ToolStripButton();
@@ -217,7 +218,10 @@ namespace FlashLogViewer
                 if (!File.Exists(this.Settings.FlashLogFile))
                 {
                     if (!Directory.Exists(flashLogDir)) Directory.CreateDirectory(flashLogDir);
-                    this.Settings.FlashLogFile = Path.Combine(flashLogDir, "flashlog.txt");
+                    if (string.IsNullOrEmpty(this.Settings.FlashLogFile) || !File.Exists(this.Settings.FlashLogFile))
+                    {
+                        this.Settings.FlashLogFile = Path.Combine(flashLogDir, "flashlog.txt");
+                    }
                     File.WriteAllText(this.Settings.FlashLogFile, "", Encoding.UTF8);
                 }
             }
@@ -227,7 +231,10 @@ namespace FlashLogViewer
                 if (!File.Exists(this.Settings.PolicyLogFile))
                 {
                     if (!Directory.Exists(flashLogDir)) Directory.CreateDirectory(flashLogDir);
-                    this.Settings.PolicyLogFile = Path.Combine(flashLogDir, "policyfiles.txt");
+                    if (string.IsNullOrEmpty(this.Settings.PolicyLogFile) || !File.Exists(this.Settings.PolicyLogFile))
+                    {
+                        this.Settings.PolicyLogFile = Path.Combine(flashLogDir, "policyfiles.txt");
+                    }
                     File.WriteAllText(this.Settings.PolicyLogFile, "", Encoding.UTF8);
                 }
             }

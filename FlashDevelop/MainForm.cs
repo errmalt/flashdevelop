@@ -51,8 +51,8 @@ namespace FlashDevelop
             this.InitializeLocalization();
             if (this.InitializeFirstRun() != DialogResult.Abort)
             {
+                this.InitializeConfig();
                 this.InitializeRendering();
-                this.InitializeProperties();
                 this.InitializeComponents();
                 this.InitializeProcessRunner();
                 this.InitializeSmartDialogs();
@@ -91,6 +91,9 @@ namespace FlashDevelop
         #endregion
 
         #region Private Properties
+
+        /* AppMan */
+        FileSystemWatcher amWatcher;
 
         /* Components */
         private QuickFind quickFind;
@@ -142,6 +145,7 @@ namespace FlashDevelop
         private Boolean closingAll = false;
         
         /* Singleton */
+        public static Boolean Silent;
         public static Boolean IsFirst;
         public static MainForm Instance;
         public static String[] Arguments;
@@ -284,10 +288,7 @@ namespace FlashDevelop
         /// </summary>
         public Boolean IsFirstInstance
         {
-            get
-            {
-                return MainForm.IsFirst;
-            }
+            get { return MainForm.IsFirst; }
         }
 
         /// <summary>
@@ -295,10 +296,7 @@ namespace FlashDevelop
         /// </summary>
         public Boolean MultiInstanceMode
         {
-            get
-            {
-                return Program.MultiInstanceMode;
-            }
+            get { return Program.MultiInstanceMode; }
         }
 
         /// <summary>
@@ -587,6 +585,11 @@ namespace FlashDevelop
                 }
                 else return null;
             }
+            else if (file.EndsWith(".delete.fdz"))
+            {
+                this.CallCommand("RemoveZip", file);
+                return null;
+            }
             else if (file.EndsWith(".fdz"))
             {
                 this.CallCommand("ExtractZip", file);
@@ -683,18 +686,50 @@ namespace FlashDevelop
         }
 
         /// <summary>
-        /// Initializes the status properties
+        /// Initializes the config detection
         /// </summary>
-        private void InitializeProperties()
+        private void InitializeConfig()
         {
             try
             {
-                String reconfig = Path.Combine(PathHelper.BaseDir, ".reconfig");
-                if (File.Exists(reconfig))
+                // Check for FD update
+                String update = Path.Combine(PathHelper.BaseDir, ".update");
+                if (File.Exists(update))
                 {
-                    File.Delete(reconfig);
+                    File.Delete(update);
                     this.refreshConfig = true;
                 }
+                // Check for appman update
+                String appman = Path.Combine(PathHelper.BaseDir, ".appman");
+                if (File.Exists(appman))
+                {
+                    File.Delete(appman);
+                    this.refreshConfig = true;
+                }
+                // Apply appman path to PATH
+                String amPath = Path.Combine(PathHelper.ToolDir, "AppMan");
+                String oldPath = Environment.GetEnvironmentVariable("PATH", EnvironmentVariableTarget.Process);
+                Environment.SetEnvironmentVariable("PATH", oldPath + ";" + amPath, EnvironmentVariableTarget.Process);
+                // Watch for appman update notifications
+                this.amWatcher = new FileSystemWatcher(PathHelper.BaseDir, ".appman");
+                this.amWatcher.Changed += new FileSystemEventHandler(this.AppManUpdate);
+                this.amWatcher.Created += new FileSystemEventHandler(this.AppManUpdate);
+                this.amWatcher.IncludeSubdirectories = false;
+                this.amWatcher.EnableRaisingEvents = true;
+            }
+            catch {} // No errors...
+        }
+
+        /// <summary>
+        /// When AppMan is closed, it notifies of changes. Forward notifications.
+        /// </summary>
+        private void AppManUpdate(Object sender, FileSystemEventArgs e)
+        {
+            try
+            {
+                String appman = Path.Combine(PathHelper.BaseDir, ".appman");
+                NotifyEvent ne = new NotifyEvent(EventType.AppChanges);
+                EventManager.DispatchEvent(this, ne);
             }
             catch {} // No errors...
         }
@@ -1008,6 +1043,7 @@ namespace FlashDevelop
             /**
             * DockPanel events
             */
+            this.dockPanel.ActivePaneChanged += new EventHandler(this.OnActivePaneChanged);
             this.dockPanel.ActiveContentChanged += new EventHandler(this.OnActiveContentChanged);
             this.dockPanel.ActiveDocumentChanged += new EventHandler(this.OnActiveDocumentChanged);
             this.dockPanel.ContentRemoved += new EventHandler<DockContentEventArgs>(this.OnContentRemoved);
@@ -1117,7 +1153,15 @@ namespace FlashDevelop
             }
             else this.restartRequested = false;
         }
-        
+
+        /// <summary>
+        /// When dock changes, applies the padding to documents
+        /// </summary>
+        private void OnActivePaneChanged(Object sender, EventArgs e)
+        {
+            this.quickFind.ApplyFixedDocumentPadding();
+        }
+
         /// <summary>
         /// When document is removed update tab texts
         /// </summary>
@@ -1734,6 +1778,7 @@ namespace FlashDevelop
             this.Activate(); this.Focus();
             if (args != null && args.Length != 0)
             {
+                Silent = Array.IndexOf(args, "-silent") != -1;
                 for (Int32 i = 0; i < args.Length; i++)
                 {
                     OpenDocumentFromParameters(args[i]);
@@ -1927,6 +1972,31 @@ namespace FlashDevelop
         public void New(Object sender, EventArgs e)
         {
             String fileName = DocumentManager.GetNewDocumentName(null);
+            TextEvent te = new TextEvent(EventType.FileNew, fileName);
+            EventManager.DispatchEvent(this, te);
+            if (!te.Handled)
+            {
+                this.CreateEditableDocument(fileName, "", (Int32)this.appSettings.DefaultCodePage);
+            }
+        }
+
+        /// <summary>
+        /// Creates a new blank document tracking current project
+        /// </summary>
+        public void SmartNew(Object sender, EventArgs e)
+        {
+            String ext = "";
+            if (PluginBase.CurrentProject != null)
+            {
+                try
+                {
+                    String filter = PluginBase.CurrentProject.DefaultSearchFilter;
+                    String tempExt = filter.Split(';')[0].Replace("*.", "");
+                    if (Regex.Match(tempExt, "^[A-Za-z0-9]+$").Success) ext = tempExt;
+                }
+                catch { /* NO ERRORS */ }
+            }
+            String fileName = DocumentManager.GetNewDocumentName(ext);
             TextEvent te = new TextEvent(EventType.FileNew, fileName);
             EventManager.DispatchEvent(this, te);
             if (!te.Handled)
@@ -2504,6 +2574,22 @@ namespace FlashDevelop
         }
 
         /// <summary>
+        /// Opens a find and replace dialog with a location
+        /// </summary>
+        public void FindAndReplaceFrom(Object sender, System.EventArgs e)
+        {
+            ToolStripItem button = (ToolStripItem)sender;
+            String file = ((ItemData)button.Tag).Tag;
+
+            ((Form)PluginBase.MainForm).BeginInvoke((MethodInvoker)delegate
+            {
+                OpenEditableDocument(file);
+            });
+
+            this.frInDocDialog.Show();
+        }
+
+        /// <summary>
         /// Opens a find and replace in files dialog
         /// </summary>
         public void FindAndReplaceInFiles(Object sender, System.EventArgs e)
@@ -2622,15 +2708,15 @@ namespace FlashDevelop
         /// </summary>
         public void ExtractZip(Object sender, System.EventArgs e)
         {
-            try
+            try 
             {
                 String zipLog = String.Empty;
                 String zipFile = String.Empty;
-                Boolean silentInstall = false;
                 Boolean requiresRestart = false;
+                Boolean silentInstall = MainForm.Silent;
                 ToolStripItem button = (ToolStripItem)sender;
                 String[] chunks = (((ItemData)button.Tag).Tag).Split(';');
-                if (chunks.Length > 1) 
+                if (chunks.Length > 1)
                 {
                     zipFile = chunks[0];
                     silentInstall = chunks[1] == "true";
@@ -2670,7 +2756,7 @@ namespace FlashDevelop
                             extracted.Close();
                             extracted.Dispose();
                         }
-                        else
+                        else if (!Directory.Exists(fdpath))
                         {
                             zipLog += "Create: " + fdpath + "\r\n";
                             Directory.CreateDirectory(fdpath);
@@ -2691,6 +2777,95 @@ namespace FlashDevelop
             {
                 ErrorManager.ShowError(ex);
             }
+        }
+
+        /// <summary>
+        /// Removes a zip file by extending paths with fd args
+        /// </summary>
+        public void RemoveZip(Object sender, System.EventArgs e)
+        {
+            try
+            {
+                String zipLog = String.Empty;
+                String zipFile = String.Empty;
+                Boolean requiresRestart = false;
+                Boolean silentRemove = MainForm.Silent;
+                List<String> removeDirs = new List<String>();
+                ToolStripItem button = (ToolStripItem)sender;
+                String[] chunks = (((ItemData)button.Tag).Tag).Split(';');
+                if (chunks.Length > 1)
+                {
+                    zipFile = chunks[0];
+                    silentRemove = chunks[1] == "true";
+                }
+                else zipFile = chunks[0];
+                if (!File.Exists(zipFile)) return; // Skip missing file...
+                String caption = TextHelper.GetString("Title.ConfirmDialog");
+                String message = TextHelper.GetString("Info.ZipConfirmRemove") + "\n" + zipFile;
+                if (silentRemove || MessageBox.Show(message, caption, MessageBoxButtons.OKCancel, MessageBoxIcon.Question) == DialogResult.OK)
+                {
+                    ZipEntry entry = null;
+                    zipLog += "FDZ: " + zipFile + "\r\n";
+                    ZipInputStream zis = new ZipInputStream(new FileStream(zipFile, FileMode.Open, FileAccess.Read));
+                    while ((entry = zis.GetNextEntry()) != null)
+                    {
+                        String fdpath = this.ProcessArgString(entry.Name, false).Replace("/", "\\");
+                        if (entry.IsFile)
+                        {
+                            String ext = Path.GetExtension(fdpath);
+                            if (File.Exists(fdpath))
+                            {
+                                zipLog += "Delete: " + fdpath + "\r\n";
+                                if (ext == ".dll" || ext == ".fdb" || ext == ".fdl")
+                                {
+                                    requiresRestart = true;
+                                    File.Copy(fdpath, fdpath + ".del", true);
+                                }
+                                else
+                                {
+                                    try { File.Delete(fdpath); }
+                                    catch
+                                    {
+                                        requiresRestart = true;
+                                        File.Copy(fdpath, fdpath + ".del", true);
+                                    }
+                                }
+                            }
+                        }
+                        else removeDirs.Add(fdpath);
+                    }
+                    // Remove empty dirs
+                    removeDirs.Reverse();
+                    foreach (String dir in removeDirs)
+                    {
+                        if (FolderHelper.IsDirectoryEmpty(dir) && !this.DirIsImportant(dir))
+                        {
+                            zipLog += "Remove: " + dir + "\r\n";
+                            try { Directory.Delete(dir); }
+                            catch { /* NO ERRORS */ }
+                        }
+                    }
+                    String finish = TextHelper.GetString("Info.ZipRemoveDone");
+                    if (requiresRestart)
+                    {
+                        zipLog += "Restart required.\r\n";
+                        finish += "\n" + TextHelper.GetString("Info.RequiresRestart");
+                    }
+                    String logFile = Path.Combine(PathHelper.BaseDir, "Extensions.log");
+                    File.AppendAllText(logFile, zipLog + "Done.\r\n\r\n", Encoding.UTF8);
+                    ErrorManager.ShowInfo(finish);
+                }
+            }
+            catch (Exception ex)
+            {
+                ErrorManager.ShowError(ex);
+            }
+        }
+        private Boolean DirIsImportant(String dir)
+        {
+            String full = Path.GetDirectoryName(dir);
+            String[] importants = new String[3] { PathHelper.UserPluginDir, PathHelper.UserLibraryDir, PathHelper.UserProjectsDir };
+            return Array.IndexOf(importants, full) > -1;
         }
 
         /// <summary>

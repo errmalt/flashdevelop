@@ -104,9 +104,9 @@ namespace HaXeContext
             features.typesPreKeys = new string[] { "import", "new", "extends", "implements", "using" };
             features.codeKeywords = new string[] { 
                 "enum", "typedef", "class", "interface", "var", "function", "new", "cast", "return", "break", 
-                "continue", "callback", "if", "else", "for", "while", "do", "switch", "case", "default", "type",
+                "continue", "if", "else", "for", "while", "do", "switch", "case", "default", "$type",
                 "null", "untyped", "true", "false", "try", "catch", "throw", "inline", "dynamic",
-                "extends", "using", "import", "implements", "abstract"
+                "extends", "using", "import", "implements", "abstract", "macro"
             };
             features.varKey = "var";
             features.overrideKey = "override";
@@ -218,12 +218,20 @@ namespace HaXeContext
         }
 
         /// <summary>
+        /// User refreshes project tree
+        /// </summary>
+        public override void UserRefreshRequest()
+        {
+            haxelibsCache.Clear();
+        }
+
+        /// <summary>
         /// Properly switch between different Haxe SDKs
         /// </summary>
         static public void SetHaxeEnvironment(string sdkPath)
         {
+            sdkPath = sdkPath.TrimEnd(new char[] { '/', '\\' });
             if (currentEnv == sdkPath) return;
-            currentEnv = sdkPath;
             Environment.SetEnvironmentVariable("HAXEPATH", sdkPath);
 
             var neko = Path.GetFullPath(Path.Combine(sdkPath, "..\\neko"));
@@ -231,12 +239,15 @@ namespace HaXeContext
                 Environment.SetEnvironmentVariable("NEKO_INSTPATH", neko);
             else neko = null;
 
-            var path = Environment.GetEnvironmentVariable("PATH");
-            path = Regex.Replace(path.Replace(currentSDK + ";", ""), "^[^;]+neko;", "", RegexOptions.IgnoreCase);
-            path = Regex.Replace(path.Replace(currentSDK + ";", ""), "^[^;]+haxe;", "", RegexOptions.IgnoreCase);
-            path = currentSDK.TrimEnd(new char[] { '/', '\\' }) + ";" + path;
+            var path = ";" + Environment.GetEnvironmentVariable("PATH");
+            if (currentEnv != null) path = path.Replace(currentEnv + ";", ";");
+            path = Regex.Replace(path, ";[^;]+neko[/\\\\]*;", ";", RegexOptions.IgnoreCase);
+            path = Regex.Replace(path, ";[^;]+haxe[/\\\\]*;", ";", RegexOptions.IgnoreCase);
+            path = path.TrimStart(new char[] { ';' });
+            path = sdkPath + ";" + path;
             if (neko != null) path = neko.TrimEnd(new char[] { '/', '\\' }) + ";" + path;
             Environment.SetEnvironmentVariable("PATH", path);
+            currentEnv = sdkPath;
         }
 
         /// <summary>
@@ -315,7 +326,7 @@ namespace HaXeContext
             //
             classPath = new List<PathModel>();
             // haXe std
-            string hxPath = PluginBase.CurrentProject != null
+            string hxPath = PluginBase.CurrentProject is HaxeProject
                     ? PluginBase.CurrentProject.CurrentSDK
                     : PathHelper.ResolvePath(hxsettings.GetDefaultSDK().Path);
             if (hxPath != null)
@@ -636,6 +647,9 @@ namespace HaXeContext
                     else*/ fullList.Add(import);
                 }
             }
+
+            foreach(ClassModel aClass in cFile.Classes)
+                fullList.Add(aClass.ToMemberModel());
 
             // in cache
             fullList.Sort();
@@ -1055,11 +1069,11 @@ namespace HaXeContext
             // compiler path
             var hxPath = currentSDK ?? ""; 
             var process = Path.Combine(hxPath, "haxe.exe");
-            if (!File.Exists(process))
+            /*if (!File.Exists(process))
             {
                 ErrorManager.ShowInfo(String.Format(TextHelper.GetString("Info.HaXeExeError"), "\n"));
                 return null;
-            }
+            }*/
 
             // Run haxe compiler
             Process proc = new Process();
@@ -1083,7 +1097,7 @@ namespace HaXeContext
         /// <returns>Null (not handled) or member list</returns>
         public override MemberList ResolveDotContext(ScintillaNet.ScintillaControl sci, ASExpr expression, bool autoHide)
         {
-            if (resolvingDot || hxsettings.CompletionMode == HaxeCompletionModeEnum.FlashDevelop)
+            if (resolvingDot || hxsettings.CompletionMode == HaxeCompletionModeEnum.FlashDevelop || PluginBase.MainForm.CurrentDocument.IsUntitled)
                 return null;
 
             if (autoHide && !hxsettings.DisableCompletionOnDemand)
@@ -1310,7 +1324,7 @@ namespace HaXeContext
         /// <returns>Null (not handled) or function signature</returns>
         public override MemberModel ResolveFunctionContext(ScintillaNet.ScintillaControl sci, ASExpr expression, bool autoHide)
         {
-            if (resolvingFunction || hxsettings.CompletionMode == HaxeCompletionModeEnum.FlashDevelop)
+            if (resolvingFunction || hxsettings.CompletionMode == HaxeCompletionModeEnum.FlashDevelop || PluginBase.MainForm.CurrentDocument.IsUntitled)
                 return null;
 
             if (autoHide && !hxsettings.DisableCompletionOnDemand)

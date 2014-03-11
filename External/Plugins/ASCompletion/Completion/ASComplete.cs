@@ -1912,8 +1912,8 @@ namespace ASCompletion.Completion
 			CompletionList.Show(list, autoHide, tail);
 
             // smart focus token
-            if (!features.externalCompletion)
-                AutoselectDotToken(classScope, tail);
+            //if (!features.externalCompletion)
+            AutoselectDotToken(classScope, tail);
 
             if (outOfDate) ctx.SetOutOfDate();
 			return true;
@@ -1958,6 +1958,10 @@ namespace ASCompletion.Completion
                 return;
             string word = Sci.GetWordLeft(position-1, false);
 
+            // current list
+            string reSelect = null;
+            if (CompletionList.Active) reSelect = CompletionList.SelectedLabel;
+
             // show completion
             List<ICompletionListItem> customList = new List<ICompletionListItem>();
             bool testActive = !CompletionList.Active && expr.Position != position;
@@ -1968,6 +1972,8 @@ namespace ASCompletion.Completion
                 customList.Add(new MemberItem(member));
             }
             CompletionList.Show(customList, autoHide, word);
+
+            if (reSelect != null) CompletionList.SelectItem(reSelect);
         }
 
 		#endregion
@@ -2477,27 +2483,37 @@ namespace ASCompletion.Completion
             }
 
             // local vars
-			if (local.LocalVars != null)
-			foreach(MemberModel var in local.LocalVars)
-			{
-				if (var.Name == token)
-				{
-					result.Member = var;
-                    result.InFile = inFile;
-					result.InClass = inClass;
-                    if (var.Type == null && (var.Flags & FlagType.LocalVar) > 0 
-                        && context.Features.hasInference /*&& !context.Features.externalCompletion*/)
-                        InferVariableType(local, var);
-                    result.Type = context.ResolveType(var.Type, inFile);
-					
-					if ((var.Flags & FlagType.Function) > 0)
-						result.Type = ASContext.Context.ResolveType("Function", null);
-					else
-						result.Type = context.ResolveType(var.Type, inFile);
+            if (local.LocalVars != null)
+            {
+                // Haxe 3 get/set keyword in properties declaration
+                if ((token == "set" || token == "get") && local.ContextFunction == null 
+                    && local.ContextMember != null && local.ContextMember.Parameters != null && local.ContextMember.Parameters.Count == 2)
+                {
+                    if (token == "get" && local.ContextMember.Parameters[0].Name == "get") return EvalVariable("get_" + local.ContextMember.Name, local, inFile, inClass);
+                    if (token == "set" && local.ContextMember.Parameters[1].Name == "set") return EvalVariable("set_" + local.ContextMember.Name, local, inFile, inClass);
+                }
 
-					return result;
-				}
-			}
+                foreach (MemberModel var in local.LocalVars)
+                {
+                    if (var.Name == token)
+                    {
+                        result.Member = var;
+                        result.InFile = inFile;
+                        result.InClass = inClass;
+                        if (var.Type == null && (var.Flags & FlagType.LocalVar) > 0
+                            && context.Features.hasInference /*&& !context.Features.externalCompletion*/)
+                            InferVariableType(local, var);
+                        result.Type = context.ResolveType(var.Type, inFile);
+
+                        if ((var.Flags & FlagType.Function) > 0)
+                            result.Type = ASContext.Context.ResolveType("Function", null);
+                        else
+                            result.Type = context.ResolveType(var.Type, inFile);
+
+                        return result;
+                    }
+                }
+            }
 
 			// method parameters
             if (local.ContextFunction != null && local.ContextFunction.Parameters != null)
@@ -2894,7 +2910,7 @@ namespace ASCompletion.Completion
                         break;
                     }
                     // Flash IDE-like typing
-                    else if (tmpClass.Name == "MovieClip" || tmpClass.Name == "Sprite")
+                    else if (tmpClass.Name == "MovieClip")
                     {
                         string autoType = null;
                         if (tmpClass.InFile.Version < 3)
@@ -2903,7 +2919,7 @@ namespace ASCompletion.Completion
                             else if (token.EndsWith("_txt") || token.StartsWith("txt")) autoType = "TextField";
                             else if (token.EndsWith("_btn") || token.StartsWith("bt")) autoType = "Button";
                         }
-                        else if (tmpClass.InFile.Version == 3)
+                        else if (tmpClass.InFile.Version == 3) 
                         {
                             if (token.EndsWith("_mc") || token.StartsWith("mc")) autoType = "flash.display.MovieClip";
                             else if (token.EndsWith("_txt") || token.StartsWith("txt")) autoType = "flash.text.TextField";
@@ -3938,31 +3954,7 @@ namespace ASCompletion.Completion
         public MemberItem(MemberModel oMember)
         {
             member = oMember;
-            FlagType type = member.Flags;
-            Visibility acc = member.Access;
-            icon = PluginUI.ICON_TYPE;
-            if ((type & (FlagType.Getter | FlagType.Setter)) > 0)
-                icon = ((acc & Visibility.Private) > 0) ? PluginUI.ICON_PRIVATE_PROPERTY :
-                    ((acc & Visibility.Protected) > 0) ? PluginUI.ICON_PROTECTED_PROPERTY : PluginUI.ICON_PROPERTY;
-            else if ((type & FlagType.Constant) > 0)
-                icon = ((acc & Visibility.Private) > 0) ? PluginUI.ICON_PRIVATE_CONST :
-                    ((acc & Visibility.Protected) > 0) ? PluginUI.ICON_PROTECTED_CONST : PluginUI.ICON_CONST;
-            else if ((type & FlagType.Variable) > 0)
-                icon = ((acc & Visibility.Private) > 0) ? PluginUI.ICON_PRIVATE_VAR :
-                    ((acc & Visibility.Protected) > 0) ? PluginUI.ICON_PROTECTED_VAR : PluginUI.ICON_VAR;
-			else if ((type & FlagType.Function) > 0)
-				icon = ((acc & Visibility.Private) > 0) ? PluginUI.ICON_PRIVATE_FUNCTION :
-					((acc & Visibility.Protected) > 0) ? PluginUI.ICON_PROTECTED_FUNCTION : PluginUI.ICON_FUNCTION;
-            else if ((type & FlagType.Intrinsic) > 0)
-                icon = PluginUI.ICON_INTRINSIC_TYPE;
-            else if ((type & FlagType.Interface) > 0)
-                icon = PluginUI.ICON_INTERFACE;
-            else if (type == FlagType.Package)
-                icon = PluginUI.ICON_PACKAGE;
-            else if (type == FlagType.Declaration)
-                icon = PluginUI.ICON_DECLARATION;
-            else if (type == FlagType.Template)
-                icon = PluginUI.ICON_TEMPLATE;
+            icon = PluginUI.GetIcon(member.Flags, member.Access); 
         }
 
         public string Label

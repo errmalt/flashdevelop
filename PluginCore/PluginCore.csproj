@@ -306,6 +306,9 @@
     <Compile Include="PluginCore\Controls\SmartForm.cs">
       <SubType>Form</SubType>
     </Compile>
+    <Compile Include="PluginCore\Controls\ToolStripEx.cs">
+      <SubType>Component</SubType>
+    </Compile>
     <Compile Include="PluginCore\Controls\WinFormUtils.cs" />
     <Compile Include="PluginCore\Helpers\ConfigHelper.cs" />
     <Compile Include="PluginCore\Helpers\JvmConfigHelper.cs" />
@@ -322,6 +325,7 @@
     <Compile Include="PluginCore\Bridge\BridgeClient.cs" />
     <Compile Include="PluginCore\Bridge\ServerSocket.cs" />
     <Compile Include="PluginCore\Bridge\WatcherEx.cs" />
+    <Compile Include="PluginCore\PlatformData.cs" />
     <Compile Include="PluginCore\Utilities\CryptoClasses.cs" />
     <Compile Include="PluginCore\Utilities\ImageKonverter.cs" />
     <Compile Include="PluginCore\Utilities\LogicalComparer.cs" />
@@ -524,7 +528,9 @@
       <SubType>Designer</SubType>
     </EmbeddedResource>
     <EmbeddedResource Include="PluginCore\Resources\MessageBarClose.bmp" />
-    <EmbeddedResource Include="PluginCore\Resources\zh_CN.resx" />
+    <EmbeddedResource Include="PluginCore\Resources\zh_CN.resx">
+      <SubType>Designer</SubType>
+    </EmbeddedResource>
   </ItemGroup>
   <ItemGroup>
     <Content Include="DockPanelSuite\Resources\DockIndicator_PaneDiamond.bmp" />

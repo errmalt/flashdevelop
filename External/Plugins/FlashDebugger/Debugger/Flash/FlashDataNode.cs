@@ -226,7 +226,7 @@ namespace FlashDebugger.Debugger.Flash
                             ValueExp exp = b.parse(new java.io.StringReader(cmd));
                             var ctx = new ExpressionContext(m_Session, m_Session.getFrames()[PluginMain.debugManager.CurrentFrame]);
                             var obj = exp.evaluate(ctx);
-                            if (obj is flash.tools.debugger.concrete.DValue) obj = new flash.tools.debugger.concrete.DVariable("getChildAt(" + i + ")", (flash.tools.debugger.concrete.DValue)obj);
+							if (obj is flash.tools.debugger.concrete.DValue) obj = new flash.tools.debugger.concrete.DVariable("getChildAt(" + i + ")", (flash.tools.debugger.concrete.DValue)obj, ((flash.tools.debugger.concrete.DValue)obj).getIsolateId());
                             DataNode childNode = new FlashDataNode((Variable)obj, cmd, m_Session);
                             childNode.Text = "child_" + i;
                             childrenNode.Nodes.Add(childNode);

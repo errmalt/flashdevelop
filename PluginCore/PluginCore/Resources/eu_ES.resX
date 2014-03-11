@@ -3020,9 +3020,6 @@ Kontutan izan injekzioa gaituz gero, ezin izanen diren proiektuaren hainbat auke
   <data name="CodeRefactor.Info.FindingReferences" xml:space="preserve">
     <value>Erreferentziak aurkitzen...</value>
   </data>
-  <data name="CodeRefactor.Info.RenamingReferences" xml:space="preserve">
-    <value>Erreferentzian berrizendatzen...</value>
-  </data>
   <data name="CodeRefactor.Info.ResolvingReferences" xml:space="preserve">
     <value>Erreferentziak ebazten...</value>
   </data>
@@ -5007,15 +5004,73 @@ Lokalizazio pertsonalizatuek lehenetsiaren luzapen bat izan behar dute, adb. en-
     <comment>Added after 4.4.2</comment>
   </data>
   <data name="FlashDevelop.Label.YesToAll" xml:space="preserve">
-    <value>Yes to &amp;all</value>
+    <value>Guztiari bai</value>
     <comment>Added after 4.4.3</comment>
   </data>
   <data name="TaskListPanel.Description.ExploringMode" xml:space="preserve">
-    <value>The task exploring mode. Light: current files and manual refresh, Complete: current files, project files and manual refresh.</value>
+    <value>Zereginen ikuspegia. Arina: uneko fitxategiak eta eskuzko freskatzea, Osoa: uneko fitxategiak, proiektu fitxategiak eta eskuzko freskatzea.</value>
     <comment>Added after 4.4.3</comment>
   </data>
   <data name="BasicCompletion.Description.AutoInsertType" xml:space="preserve">
-    <value>Specifies when pressing Enter key inserts the completion list item.</value>
+    <value>Enter tekla sakatzean osatze zerrendako elementua txertatuko den zehazten da.</value>
     <comment>Added after 4.4.3</comment>
+  </data>
+  <data name="CodeRefactor.Info.RenamingFile" xml:space="preserve">
+    <value>Fitxategi bat berrizendatzen ari zara. Erreferentziak ere eguneratu nahi dituzu?</value>
+    <comment>Added after 4.4.3</comment>
+  </data>
+  <data name="ProjectManager.Label.CodeFilesOnly" xml:space="preserve">
+    <value>Kode fitxategiak bakarrik</value>
+    <comment>Added after 4.4.3</comment>
+  </data>
+  <data name="FlashDevelop.Label.HaxeDocument" xml:space="preserve">
+    <value>Haxe Dokumentua</value>
+    <comment>Added after 4.4.3</comment>
+  </data>
+  <data name="FlashDevelop.Label.InstallSoftware" xml:space="preserve">
+    <value>Install Software...</value>
+    <comment>Added after 4.5.0</comment>
+  </data>
+  <data name="FlashDevelop.Info.ZipConfirmRemove" xml:space="preserve">
+    <value>Can the following zip file be removed:</value>
+    <comment>Added after 4.5.1</comment>
+  </data>
+  <data name="FlashDevelop.Info.ZipRemoveDone" xml:space="preserve">
+    <value>The zip file was removed succesfully.</value>
+    <comment>Added after 4.5.1</comment>
+  </data>
+  <data name="CodeRefactor.Info.MovingFile" xml:space="preserve">
+    <value>You are moving file[s]. Do you also want to update the references?</value>
+    <comment>Added after 4.5.2</comment>
+  </data>
+  <data name="CodeRefactor.Info.UpdatingReferences" xml:space="preserve">
+    <value>Updating References...</value>
+    <comment>Modified after 4.5.2</comment>
+  </data>
+  <data name="CodeRefactor.Title.MoveDialog" xml:space="preserve">
+    <value>Moving File[s]</value>
+    <comment>Added after 4.5.2</comment>
+  </data>
+  <data name="FlashDebugger.Title.Threads" xml:space="preserve">
+    <value>Threads</value>
+  </data>
+  <data name="FlashDebugger.Label.ViewThreadsPanel" xml:space="preserve">
+    <value>Threads Panel</value>
+  </data>
+  <data name="MacroManager.Description.ShowInToolbar" xml:space="preserve">
+    <value>Shows the macro in the main toolbar.</value>
+    <comment>Added after 4.5.2</comment>
+  </data>
+  <data name="FlashDebugger.Description.SwitchToLayout" xml:space="preserve">
+    <value>Switch to selected layout on debugger start. On debugger stop, previous layout is restored. If a layout is selected, debugger panels are not shown automatically.</value>
+    <comment>Added after 4.5.2</comment>
+  </data>
+  <data name="OutputPanel.ToolTip.StartScrolling" xml:space="preserve">
+    <value>Start scrolling</value>
+    <comment>Added after 4.5.2</comment>
+  </data>
+  <data name="OutputPanel.ToolTip.StopScrolling" xml:space="preserve">
+    <value>Stop scrolling</value>
+    <comment>Added after 4.5.2</comment>
   </data>
 </root>

@@ -14,7 +14,10 @@ namespace SetVersion
         /// </summary>
         static void Main(string[] args)
         {
+            var commit = "";
+            var branch = "";
             var git = ".git";
+            var build = args[1];
             var output = args[0];
             var revOut = output + ".rev";
             if (!File.Exists(revOut))
@@ -26,30 +29,35 @@ namespace SetVersion
             var headRef = Regex.Match(head, "ref: refs/heads/(.*)");
             if (!headRef.Success)
             {
-                Console.WriteLine("SetVersion: can not find HEAD ref, write null.");
-                WriteFile(output, revOut, Environment.ExpandEnvironmentVariables("%ProjectBuildNumber%"), "DEV");
+                Console.WriteLine("SetVersion: Can not find HEAD ref, write from env vars.");
+                commit = Environment.ExpandEnvironmentVariables("%CommitId%");
+                if (commit.Length == 40) commit = commit.Substring(0, 10);
+                branch = Environment.ExpandEnvironmentVariables("%RepositoryBranch%");
+                build = Environment.ExpandEnvironmentVariables("%AppVeyor.ProjectBuildNumber%");
+                WriteFile(output, revOut, commit, branch, build);
                 return;
             }
-            var branch = headRef.Groups[1].Value;
+            branch = headRef.Groups[1].Value;
             var refPath = Path.Combine(Path.Combine(git, "refs\\heads"), branch);
             if (!File.Exists(refPath))
             {
-                Console.WriteLine("SetVersion: can not read ref commit hash");
+                Console.WriteLine("SetVersion: Can not read ref commit hash.");
                 return;
             }
-            var commit = File.ReadAllText(refPath).Trim();
+            commit = File.ReadAllText(refPath).Trim();
             if (commit.Length == 40) commit = commit.Substring(0, 10);
-            Console.WriteLine("Set revision: " + branch + " " + commit);
-            WriteFile(output, revOut, commit, branch);
+            Console.WriteLine("Set revision: " + branch + "-" + commit + "-" + build);
+            WriteFile(output, revOut, commit, branch, build);
         }
 
         /// <summary>
         /// 
         /// </summary>
-        static void WriteFile(String output, String revOut, String commit, String branch)
+        static void WriteFile(String output, String revOut, String commit, String branch, String build)
         {
             var raw = File.ReadAllText(revOut);
-            raw = raw.Replace("$BRANCH$", branch).Replace("$COMMIT$", commit);
+            if (build != "") build = "." + build;
+            raw = raw.Replace("$BRANCH$", branch).Replace("$COMMIT$", commit).Replace("$BUILD$", build);
             File.WriteAllText(output, raw);
         }
 

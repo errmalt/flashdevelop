@@ -426,16 +426,9 @@ namespace ASCompletion.Model
             lock (typeof(ASFileParser))
             {
                 cachedPath = inPath;
-                ParseFile(file, inContext);
+                ParseFile(inContext.CreateFileModel(file));
                 cachedPath = null;
             }
-        }
-
-        static public FileModel ParseFile(string file, IASContext inContext)
-        {
-            FileModel fileModel = new FileModel(file);
-            fileModel.Context = inContext;
-            return ParseFile(fileModel);
         }
 
         static public FileModel ParseFile(FileModel fileModel)
@@ -815,9 +808,9 @@ namespace ASCompletion.Model
 
                                     // next model
                                     string realFile = directive.Substring(11);
-                                    FileModel newModel = new FileModel(realFile, cacheLastWriteTime);
+                                    FileModel newModel = model.Context != null ? model.Context.CreateFileModel(realFile) : new FileModel(realFile);
+                                    newModel.LastWriteTime = cacheLastWriteTime;
                                     newModel.CachedModel = true;
-                                    newModel.Context = model.Context;
                                     if (features != null && features.hasModules) 
                                         newModel.Module = Path.GetFileNameWithoutExtension(realFile);
                                     haXe = newModel.haXe;
@@ -833,6 +826,17 @@ namespace ASCompletion.Model
                             else inCode = true;
                             commentLength = 0;
                             matching = 0;
+                        }
+                        else if (c1 == '#') // peek for #end
+                        {
+                            if (i + 3 < len && ba[i] == 'e' && ba[i + 1] == 'n' && ba[i + 2] == 'd' && ba[i + 3] <= 32)
+                            {
+                                matching = 0;
+                                inCode = true;
+                                commentLength = 0;
+                                i += 3;
+                                continue;
+                            }
                         }
 
                         break;

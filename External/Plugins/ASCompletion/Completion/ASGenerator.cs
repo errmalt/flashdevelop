@@ -107,7 +107,7 @@ namespace ASCompletion.Completion
             {
                 if (resolve.Member == null) // import declaration
                 {
-                    if ((resolve.Type == null || !ASContext.Context.IsImported(resolve.Type, line)) && CheckAutoImport(found))
+                    if ((resolve.Type == null || resolve.Type.IsVoid() || !ASContext.Context.IsImported(resolve.Type, line)) && CheckAutoImport(found))
                     {
                         return;
                     }
@@ -1492,13 +1492,10 @@ namespace ASCompletion.Completion
         {
             int wordPos = Sci.WordEndPosition(Sci.CurrentPos, true);
             List<FunctionParameter> functionParameters = ParseFunctionParameters(Sci, wordPos);
-
             ASResult funcResult = ASComplete.GetExpressionType(Sci, Sci.WordEndPosition(Sci.CurrentPos, true));
-            if (funcResult == null || funcResult.Type == null)
-            {
-                return;
-            }
-            if (funcResult != null && funcResult.Type != null && !funcResult.Type.Equals(inClass))
+
+            if (funcResult == null || funcResult.Type == null) return;
+            if (funcResult.Type != null && !funcResult.Type.Equals(inClass))
             {
                 AddLookupPosition();
                 lookupPosition = -1;
@@ -1506,7 +1503,7 @@ namespace ASCompletion.Completion
                 DockContent dc = ASContext.MainForm.OpenEditableDocument(funcResult.Type.InFile.FileName, true);
                 Sci = ASContext.CurSciControl;
 
-                FileModel fileModel = new FileModel();
+                FileModel fileModel = new FileModel(funcResult.Type.InFile.FileName);
                 fileModel.Context = ASContext.Context;
                 ASFileParser parser = new ASFileParser();
                 parser.ParseSrc(fileModel, Sci.Text);
@@ -1519,22 +1516,22 @@ namespace ASCompletion.Completion
                         break;
                     }
                 }
-                inClass = funcResult.Type;
 
+                inClass = funcResult.Type;
                 ASContext.Context.UpdateContext(inClass.LineFrom);
             }
 
-            MemberList members = inClass.Members;
-            foreach (MemberModel m in members)
+            foreach (MemberModel m in inClass.Members)
             {
                 if ((m.Flags & FlagType.Constructor) > 0)
                 {
                     funcResult.Member = m;
+                    break;
                 }
             }
 
-            if (funcResult.Member == null)
-                return;
+            if (funcResult.Member == null) return;
+            if (inClass.InFile.haXe) funcResult.Member.Name = "new";
 
             ChangeDecl(Sci, funcResult.Member, functionParameters);
         }
@@ -1678,7 +1675,7 @@ namespace ASCompletion.Completion
             ClassModel aType = ASContext.Context.ResolveType(interf, ASContext.Context.CurrentModel);
             if (aType.IsVoid()) return;
 
-            FileModel fileModel = ASFileParser.ParseFile(aType.InFile.FileName, ASContext.Context);
+            FileModel fileModel = ASFileParser.ParseFile(ASContext.Context.CreateFileModel(aType.InFile.FileName));
             foreach (ClassModel cm in fileModel.Classes)
             {
                 if (cm.QualifiedName.Equals(aType.QualifiedName))
@@ -2627,7 +2624,9 @@ namespace ASCompletion.Completion
             string paramsString = TemplateUtils.ParametersString(paramMember, true);
             Hashtable info = new Hashtable();
             info["className"] = className;
-            info["templatePath"] = Path.Combine(projTemplateDir, "Class.as.fdt");
+            if (project.Language.StartsWith("as")) info["templatePath"] = Path.Combine(projTemplateDir, "Class.as.fdt");
+            else if (project.Language.StartsWith("haxe")) info["templatePath"] = Path.Combine(projTemplateDir, "Class.hx.fdt");
+            else if (project.Language.StartsWith("loom")) info["templatePath"] = Path.Combine(projTemplateDir, "Class.ls.fdt");
             info["inDirectory"] = Path.GetDirectoryName(inClass.InFile.FileName);
             info["constructorArgs"] = paramsString.Length > 0 ? paramsString : null;
             info["constructorArgTypes"] = constructorArgTypes;
@@ -3875,11 +3874,11 @@ namespace ASCompletion.Completion
             else
             {
                 string type = FormatType(member.Type);
-                if (type == null) type = features.objectKey;
+                //if (type == null) type = features.objectKey;
                 
                 decl = acc + features.functionKey + " ";
-                bool noRet = type.Equals("void", StringComparison.OrdinalIgnoreCase);
-                type = (noRet) ? ASContext.Context.Features.voidKey : type;
+                bool noRet = type == null || type.Equals("void", StringComparison.OrdinalIgnoreCase);
+                type = (noRet && type != null) ? ASContext.Context.Features.voidKey : type;
                 if (!noRet)
                 {
                     string qType = getQualifiedType(type, ofClass);

@@ -59,7 +59,7 @@ namespace BookmarkPanel
             this.columnText = new System.Windows.Forms.ColumnHeader();
             this.contextMenuStrip = new System.Windows.Forms.ContextMenuStrip();
             this.removeBookmarksItem = new System.Windows.Forms.ToolStripMenuItem();
-            this.toolStrip = new System.Windows.Forms.ToolStrip();
+            this.toolStrip = new PluginCore.Controls.ToolStripEx();
             this.searchButton = new System.Windows.Forms.ToolStripButton();
             this.searchBox = new System.Windows.Forms.ToolStripSpringComboBox();
             this.statusStrip = new System.Windows.Forms.StatusStrip();
@@ -229,7 +229,7 @@ namespace BookmarkPanel
         {
             this.imageList = new ImageList();
             this.imageList.ColorDepth = ColorDepth.Depth32Bit;
-            this.imageList.Images.Add(PluginBase.MainForm.FindImage("495|26|0|1"));
+            this.imageList.Images.Add(PluginBase.MainForm.FindImage("559|26|0|1"));
             this.imageList.Images.Add(PluginBase.MainForm.FindImage("229"));
             this.imageList.Images.Add(PluginBase.MainForm.FindImage("197"));
             this.imageList.Images.SetKeyName(0, "Bookmark");
@@ -570,7 +570,6 @@ namespace BookmarkPanel
         /// <summary>
         /// Create a new ListViewGroup and assign to the current listview
         /// </summary>
-        /// <param name="doc"></param>
         public void CreateDocument(String filename)
         {
             ListViewGroup group = new ListViewGroup();

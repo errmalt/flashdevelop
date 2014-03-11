@@ -588,10 +588,17 @@ namespace FlashDevelop.Dialogs
         private void BrowseButtonClick(Object sender, EventArgs e)
         {
             FolderBrowserDialog fbd = new FolderBrowserDialog();
-            if (Directory.Exists(this.folderComboBox.Text))
+            String curDir = this.folderComboBox.Text;
+            if (curDir == "<Project>") 
             {
-                fbd.SelectedPath = this.folderComboBox.Text;
+                if (PluginBase.CurrentProject != null)
+                {
+                    String projectPath = PluginBase.CurrentProject.ProjectPath;
+                    curDir = Path.GetDirectoryName(projectPath);
+                }
+                else curDir = Globals.MainForm.WorkingDirectory;
             }
+            if (Directory.Exists(curDir)) fbd.SelectedPath = curDir;
             if (fbd.ShowDialog() == DialogResult.OK && Directory.Exists(fbd.SelectedPath))
             {
                 this.folderComboBox.Text = fbd.SelectedPath;
@@ -834,6 +841,7 @@ namespace FlashDevelop.Dialogs
             this.cancelButton.Enabled = false;
             String message = TextHelper.GetString("Info.NoMatches");
             this.infoLabel.Text = message;
+            this.CenterToParent();
         }
 
         /// <summary>
@@ -845,7 +853,6 @@ namespace FlashDevelop.Dialogs
             {
                 this.findComboBox.Select();
                 this.findComboBox.SelectAll();
-                this.CenterToParent();
             }
         }
 
@@ -935,7 +942,11 @@ namespace FlashDevelop.Dialogs
                     IProject project = PluginBase.CurrentProject;
                     String projPath = Path.GetDirectoryName(project.ProjectPath);
                     walker = new PathWalker(projPath, mask, recursive);
-                    allFiles.AddRange(walker.GetFiles());
+                    List<String> projFiles = walker.GetFiles();
+                    foreach (String file in projFiles)
+                    {
+                        if (!IsFileHidden(file, project)) allFiles.Add(file);
+                    }
                     for (var i = 0; i < project.SourcePaths.Length; i++)
                     {
                         String sourcePath = project.GetAbsolutePath(project.SourcePaths[i]);
@@ -950,6 +961,20 @@ namespace FlashDevelop.Dialogs
                 else return null;
             }
             else return new FRConfiguration(path, mask, recursive, this.GetFRSearch());
+        }
+
+        /// <summary>
+        /// 
+        /// </summary>
+        private Boolean IsFileHidden(String file, IProject project)
+        {
+            String[] hiddenPaths = project.GetHiddenPaths();
+            foreach (String hiddenPath in hiddenPaths)
+            {
+                String absHiddenPath = project.GetAbsolutePath(hiddenPath);
+                if (Directory.Exists(absHiddenPath) && file.StartsWith(absHiddenPath)) return true;
+            }
+            return false;
         }
 
         /// <summary>

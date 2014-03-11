@@ -130,7 +130,7 @@ namespace CodeRefactor.Commands
         private void OnFindAllReferencesCompleted(Object sender, RefactorCompleteEventArgs<IDictionary<string, List<SearchMatch>>> eventArgs)
         {
             UserInterfaceManager.ProgressDialog.Show();
-            UserInterfaceManager.ProgressDialog.SetTitle(TextHelper.GetString("Info.RenamingReferences"));
+            UserInterfaceManager.ProgressDialog.SetTitle(TextHelper.GetString("Info.UpdatingReferences"));
             PluginCore.Controls.MessageBar.Locked = true;
             foreach (KeyValuePair<String, List<SearchMatch>> entry in eventArgs.Results)
             {
@@ -212,9 +212,8 @@ namespace CodeRefactor.Commands
                 }
 
             File.Move(oldFileName, newFileName);
+            PluginCore.Managers.DocumentManager.MoveDocuments(oldFileName, newFileName);
             PluginBase.MainForm.OpenEditableDocument(newFileName, false);
-
-            //TODO: report
         }
 
         /// <summary>

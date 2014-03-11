@@ -1,8 +1,4 @@
-using System;
-using System.Text;
 using System.Windows.Forms;
-using System.Collections.Generic;
-using CodeRefactor.Commands;
 using CodeRefactor.Controls;
 using PluginCore;
 
@@ -17,10 +13,7 @@ namespace CodeRefactor.Provider
         /// </summary>
         private static Form Main
         {
-            get
-            {
-                return PluginBase.MainForm as Form;
-            }
+            get { return PluginBase.MainForm as Form; }
         }
 
         /// <summary>

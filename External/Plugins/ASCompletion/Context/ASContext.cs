@@ -609,6 +609,7 @@ namespace ASCompletion.Context
         protected virtual void ManualExploration(PathModel path, IEnumerable<String> hideDirectories)
         {
             PathExplorer explorer = new PathExplorer(this, path);
+            path.InUse = true;
             if (hideDirectories != null) explorer.HideDirectories(hideDirectories);
             explorer.OnExplorationDone += new PathExplorer.ExplorationDoneHandler(RefreshContextCache);
             explorer.OnExplorationProgress += new PathExplorer.ExplorationProgressHandler(ExplorationProgress);
@@ -739,6 +740,14 @@ namespace ASCompletion.Context
         {
             if (Settings != null) return new string[] { "*" + Settings.DefaultExtension }; else return null;
         }
+
+        /// <summary>
+        /// User refreshes project tree
+        /// </summary>
+        public virtual void UserRefreshRequest()
+        {
+        }
+
         #endregion
 
 		#region model caching
@@ -822,7 +831,7 @@ namespace ASCompletion.Context
             }
 
             // parse and add to cache
-            nFile = ASFileParser.ParseFile(fileName, this);
+            nFile = ASFileParser.ParseFile(CreateFileModel(fileName));
             string upName = fileName.ToUpper();
             foreach (PathModel aPath in classPath)
             {
@@ -887,12 +896,21 @@ namespace ASCompletion.Context
         /// <returns>File model</returns>
         public virtual FileModel GetFileModel(string fileName)
         {
-            if (fileName == null || fileName.Length == 0 || !File.Exists(fileName))
-                return new FileModel(fileName);
-            
-            fileName = PathHelper.GetLongPathName(fileName);
-            FileModel nFile = ASFileParser.ParseFile(fileName, this);
-            return nFile;
+            return ASFileParser.ParseFile(CreateFileModel(fileName));
+        }
+
+        /// <summary>
+        /// Create a new file model without parsing file
+        /// </summary>
+        /// <param name="fileName">Full path</param>
+        /// <returns>File model</returns>
+        public virtual FileModel CreateFileModel(string fileName)
+        {
+            if (string.IsNullOrEmpty(fileName) || !File.Exists(fileName))
+                return new FileModel(fileName ?? "");
+            var fileModel = new FileModel(PathHelper.GetLongPathName(fileName));
+            fileModel.Context = this;
+            return fileModel;
         }
 
         /// <summary>
@@ -1442,8 +1460,8 @@ namespace ASCompletion.Context
 				}
 			}
 			FileModel aFile;
-			if (src == null) aFile = cFile;
-			else aFile = ASFileParser.ParseFile(src, this);
+            if (src == null) aFile = cFile;
+            else aFile = ASFileParser.ParseFile(CreateFileModel(src));
 			if (aFile.Version == 0) return;
 			//
 			string code = aFile.GenerateIntrinsic(false);

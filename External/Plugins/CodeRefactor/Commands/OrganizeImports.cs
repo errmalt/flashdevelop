@@ -34,11 +34,28 @@ namespace CodeRefactor.Commands
             Int32 pos = sci.CurrentPos;
             List<MemberModel> imports = new List<MemberModel>(context.CurrentModel.Imports.Count);
             imports.AddRange(context.CurrentModel.Imports.Items);
+            int cppPpStyle = (int)ScintillaNet.Lexers.CPP.PREPROCESSOR;
             for (Int32 i = imports.Count - 1; i >= 0; i--)
-                if ((imports[i].Flags & (FlagType.Using | FlagType.Constant)) != 0) imports.RemoveAt(i);
+            {
+                bool isPP = sci.LineIsInPreprocessor(sci, cppPpStyle, imports[i].LineTo);
+                if ((imports[i].Flags & (FlagType.Using | FlagType.Constant)) != 0 || isPP)
+                {
+                    imports.RemoveAt(i);
+                }
+            }
             ImportsComparerLine comparerLine = new ImportsComparerLine();
             imports.Sort(comparerLine);
-            sci.SetSel(sci.PositionFromLine(context.CurrentModel.GetPublicClass().LineFrom), sci.PositionFromLine(context.CurrentModel.GetPublicClass().LineTo));
+            if (sci.ConfigurationLanguage == "haxe")
+            {
+                Int32 start = sci.PositionFromLine(context.CurrentModel.Classes[0].LineFrom);
+                sci.SetSel(start, sci.Length);
+            }
+            else
+            {
+                Int32 start = sci.PositionFromLine(context.CurrentModel.GetPublicClass().LineFrom);
+                Int32 end = sci.PositionFromLine(context.CurrentModel.GetPublicClass().LineTo);
+                sci.SetSel(start, end);
+            }
             String publicClassText = sci.SelText;
             String privateClassText = "";
             if (context.CurrentModel.Classes.Count > 1)
