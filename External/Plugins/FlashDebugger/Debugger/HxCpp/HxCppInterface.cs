@@ -34,15 +34,19 @@ namespace FlashDebugger.Debugger.HxCpp
 
 		public event DebuggerProgressEventHandler ProgressEvent;
 
+		public event DebuggerEventHandler ThreadsEvent;
+
 		Manager manager;
 		Session session;
-		bool isSuspended;
 		bool initialThreadStop;
+		int activeThread;
+		Dictionary<int, HxCppThread> threads;
 
 		public bool Initialize()
 		{
 			manager = new Manager();
 			manager.ProgressEvent += new DebuggerProgressEventHandler(manager_ProgressEvent);
+			threads = new Dictionary<int, HxCppThread>();
 			return true;
 		}
 
@@ -50,7 +54,6 @@ namespace FlashDebugger.Debugger.HxCpp
 		{
 			try
 			{
-				isSuspended = false;
 				initialThreadStop = true;
 
 				manager.Listen();
@@ -121,6 +124,7 @@ namespace FlashDebugger.Debugger.HxCpp
 				if (TraceEvent != null) { TraceEvent(this, e.ToString()); }
 				if (e is Message.ThreadStopped)
 				{
+					Message.ThreadStopped ev = e as Message.ThreadStopped;
 					//Message.ThreadStopped x;
 					// store current location?
 					frames = null;
@@ -129,23 +133,47 @@ namespace FlashDebugger.Debugger.HxCpp
 					if (initialThreadStop)
 					{
 						initialThreadStop = false;
-						isSuspended = true;
+
+						// create the primary thread
+						threads.Add(0, new HxCppThread(0));
+						threads[0].IsSuspended = true;
+
+						//session.Request(Command.DeleteAllBreakpoints());
+						UpdateBreakpoints(PluginMain.breakPointManager.BreakPoints);
+
 						if (ScriptLoadedEvent != null) { ScriptLoadedEvent(this); }
 						continue;
 					}
 
 					// if we are already suspended, lets not call PauseEvent again.
 					// This was happening when the debugger thread encountered strange errors and then the loop would kill FD.
-					if (!isSuspended)
+					if (!IsDebuggerSuspended)
 					{
-						isSuspended = true; // TODO
+						threads[ev.number].IsSuspended = true;
+						ActiveThreadId = ev.number;
 						if (BreakpointEvent != null) { BreakpointEvent(this); }
 					}
 				}
 				if (e is Message.ThreadStarted)
 				{
-					isSuspended = false;
+					Message.ThreadStarted ev = e as Message.ThreadStarted;
+					threads[ev.number].IsSuspended = false;
+					OnThreads();
 				}
+				if (e is Message.ThreadCreated)
+				{
+					Message.ThreadCreated ev = e as Message.ThreadCreated;
+					threads.Add(ev.number, new HxCppThread(ev.number));
+					OnThreads();
+				}
+				if (e is Message.ThreadTerminated)
+				{
+					Message.ThreadTerminated ev = e as Message.ThreadTerminated;
+					threads.Remove(ev.number);
+					// check current thread?
+					OnThreads();
+				}
+				
 
 			}
 
@@ -170,7 +198,7 @@ namespace FlashDebugger.Debugger.HxCpp
 
 		public bool IsDebuggerSuspended
 		{
-			get { return isSuspended; }
+			get { return threads[ActiveThreadId].IsSuspended; }
 		}
 
 		public void UpdateBreakpoints(List<BreakPointInfo> breakpoints)
@@ -346,17 +374,39 @@ namespace FlashDebugger.Debugger.HxCpp
 		{
 			get
 			{
-				throw new NotImplementedException();
+				return activeThread;
 			}
 			set
 			{
-				throw new NotImplementedException();
+				if (activeThread != value)
+				{
+					if (threads.ContainsKey(value) && !threads[value].IsSuspended)
+					{
+						// currently hxcpp engine cannot switch to a running thread... bummer
+						return;
+					}
+					session.Request(Command.SetCurrentThread(value));
+					activeThread = value;
+					OnThreads();
+				}
 			}
 		}
 
 		public DbgThread[] GetThreads()
 		{
-			throw new NotImplementedException();
+			HxCppThread[] ret = new HxCppThread[threads.Count];
+			threads.Values.CopyTo(ret, 0);
+			return ret;
 		}
+
+		#region Event helpers
+		public virtual void OnThreads()
+		{
+			if (ThreadsEvent != null)
+			{
+				ThreadsEvent(this);
+			}
+		}
+		#endregion
 	}
 }

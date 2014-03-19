@@ -152,6 +152,7 @@
     <Compile Include="Debugger\HxCpp\HxCppFrame.cs" />
     <Compile Include="Debugger\HxCpp\HxCppLocation.cs" />
     <Compile Include="Debugger\HxCpp\HxCppSourceFile.cs" />
+    <Compile Include="Debugger\HxCpp\HxCppThread.cs" />
     <Compile Include="Debugger\HxCpp\Server\Command.cs" />
     <Compile Include="Debugger\HxCpp\HaxeDeserializer.cs" />
     <Compile Include="Debugger\HxCpp\HaxeSerializer.cs" />

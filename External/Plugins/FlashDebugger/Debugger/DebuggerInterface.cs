@@ -25,6 +25,7 @@ namespace FlashDebugger.Debugger
         event DebuggerEventHandler WatchpointEvent;
         event DebuggerEventHandler UnknownHaltEvent;
         event DebuggerProgressEventHandler ProgressEvent;
+		event DebuggerEventHandler ThreadsEvent;
 
         bool Initialize();
 		void Start();
