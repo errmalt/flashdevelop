@@ -2,7 +2,7 @@ package $(PackageName);
 
 import cpp.Lib;
 #if HXCPP_DEBUGGER
-import debugger.HaxeRemote;
+import org.flashdevelop.cpp.debugger.HaxeRemote;
 #end
 
 /**

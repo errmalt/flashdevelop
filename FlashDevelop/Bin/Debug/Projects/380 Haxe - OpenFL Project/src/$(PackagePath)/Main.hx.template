@@ -3,6 +3,9 @@ package $(PackageName);
 import flash.display.Sprite;
 import flash.events.Event;
 import flash.Lib;
+#if HXCPP_DEBUGGER
+import org.flashdevelop.cpp.debugger.HaxeRemote;
+#end
 
 /**
 $(CBI)* ...
@@ -50,6 +53,9 @@ class Main extends Sprite $(CSLB){
 	}
 	
 	public static function main() $(CSLB){
+#if HXCPP_DEBUGGER
+		new HaxeRemote(true, "127.0.0.1");
+#end
 		// static entry point
 		Lib.current.stage.align = flash.display.StageAlign.TOP_LEFT;
 		Lib.current.stage.scaleMode = flash.display.StageScaleMode.NO_SCALE;
