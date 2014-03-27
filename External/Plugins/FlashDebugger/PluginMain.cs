@@ -193,6 +193,19 @@ namespace FlashDebugger
                             breakPointManager.Project = project;
                             breakPointManager.Load();
                             breakPointManager.SetBreakPointsToEditor(PluginBase.MainForm.Documents);
+							/////
+							// select the debugger implementation
+							DebuggerEngine engine = DebuggerEngine.Flash;
+							if (PluginBase.CurrentProject is HaxeProject)
+							{
+								HaxeProject hxproject = (HaxeProject)PluginBase.CurrentProject;
+								if (hxproject.IsCppOutput || (hxproject.IsNmeOutput && hxproject.TargetBuild == "windows"))
+								{
+									engine = DebuggerEngine.HxCpp;
+								}
+							}
+							debugManager.SelectDebugger(engine);
+							/////
                         }
                         else
                         {
