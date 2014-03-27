@@ -647,13 +647,13 @@ namespace FlashDebugger.Debugger.HxCpp.Server
 			if (haxeEnum.constructor == "Files")
 			{
 				Files ret = new Files();
-				ret.list = StringList.FromEnum((HaxeEnum)haxeEnum.arguments[0]);
+				ret.list = Array.ConvertAll<Object, String>((Object[])haxeEnum.arguments[0], item => (String)item);
 				return ret;
 			}
 			if (haxeEnum.constructor == "Classes")
 			{
 				Classes ret = new Classes();
-				ret.list = StringList.FromEnum((HaxeEnum)haxeEnum.arguments[0]);
+				ret.list = Array.ConvertAll<Object, String>((Object[])haxeEnum.arguments[0], item => (String)item);
 				return ret;
 			}
 			if (haxeEnum.constructor == "MemBytes")
@@ -735,7 +735,7 @@ namespace FlashDebugger.Debugger.HxCpp.Server
 			if (haxeEnum.constructor == "Variables")
 			{
 				Variables ret = new Variables();
-				ret.list = StringList.FromEnum((HaxeEnum)haxeEnum.arguments[0]);
+				ret.list = Array.ConvertAll<Object, String>((Object[])haxeEnum.arguments[0], item => (String)item);
 				return ret;
 			}
 			if (haxeEnum.constructor == "Value")
@@ -909,19 +909,19 @@ namespace FlashDebugger.Debugger.HxCpp.Server
 
 		public class Files : Message
 		{
-			public StringList list { get; set; }
+			public String[] list { get; set; }
 			public override string ToString()
 			{
-				return "[Message.Files(list=" + list + ")]";
+				return "[Message.Files(list=string[" + String.Join(", ", list) + "])]";
 			}
 		}
 
 		public class Classes : Message
 		{
-			public StringList list { get; set; }
+			public String[] list { get; set; }
 			public override string ToString()
 			{
-				return "[Message.Classes(list=" + list + ")]";
+				return "[Message.Classes(list=string[" + String.Join(", ", list) + "])]";
 			}
 		}
 
@@ -1039,10 +1039,10 @@ namespace FlashDebugger.Debugger.HxCpp.Server
 
 		public class Variables : Message
 		{
-			public StringList list { get; set; }
+			public String[] list { get; set; }
 			public override string ToString()
 			{
-				return "[Message.Variables(list=" + list + ")]";
+				return "[Message.Variables(list=string[" + String.Join(", ", list) + "])]";
 			}
 		}
 

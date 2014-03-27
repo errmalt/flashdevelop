@@ -205,8 +205,8 @@ namespace FlashDebugger.Debugger.HxCpp
 		{
 			// add new ones
 			// todo, cache this in session, should not change while running, we don't dyn load anything.. right?
-			List<string> fres = MessageUtil.ToList(((Message.Files)session.Request(Command.Files())).list);
-			Dictionary<string, string> map = new Dictionary<string, string>(fres.Count);
+			string[] fres = ((Message.Files)session.Request(Command.Files())).list;
+			Dictionary<string, string> map = new Dictionary<string, string>(fres.Length);
 			foreach (string f in fres)
 			{
 				String localPath = HxCppSourceFile.FromString(f).LocalPath;
@@ -350,8 +350,8 @@ namespace FlashDebugger.Debugger.HxCpp
 		{
 			setCurrentFrame(frameNumber);
 			Message.Variables msg = (Message.Variables)session.Request(Command.Variables(false));
-			List<string> vars = MessageUtil.ToList(msg.list);
-			List<HxCppDataNode> ret = new List<HxCppDataNode>(vars.Count);
+			string[] vars = msg.list;
+			List<HxCppDataNode> ret = new List<HxCppDataNode>(vars.Length);
 			foreach (string var in vars)
 			{
 				ret.Add(new HxCppDataNode(var, var, session));

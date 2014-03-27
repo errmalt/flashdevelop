@@ -88,7 +88,7 @@ namespace FlashDebugger.Debugger.HxCpp
 					return new ListTerminator();
 				case 'a':
 					// array
-					throw new NotImplementedException();
+					return deserializeArray(buffer);
 				case 'v':
 					// date
 					throw new NotImplementedException();
@@ -250,6 +250,21 @@ namespace FlashDebugger.Debugger.HxCpp
 				obj = Deserialize(buffer);
 			}
 			return ret;
+		}
+
+		private Object[] deserializeArray(Stream buffer)
+		{
+			// Array : a followed by serialized items, and ending with a h
+			// if there are several consecutive nulls, we can store u5 instead of nnnnn
+			// example : ai1i2u4i7ni9h for [1,2,null,null,null,null,7,null,9]
+			List<Object> ret = new List<Object>();
+			object obj = Deserialize(buffer);
+			while (!(obj is ListTerminator))
+			{
+				ret.Add(obj);
+				obj = Deserialize(buffer);
+			}
+			return ret.ToArray();
 		}
 
 		private class ListTerminator
