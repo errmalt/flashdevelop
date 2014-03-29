@@ -28,6 +28,12 @@ namespace FlashDebugger.Debugger.HxCpp
 					children = MessageUtil.ToList(item.children);
 					Value = item.value;
 				}
+				else if (ret is Message.ErrorEvaluatingExpression)
+				{
+					Message.ErrorEvaluatingExpression err = (Message.ErrorEvaluatingExpression)ret;
+					Value = "ERR: " + err.details;
+
+				}
 				else
 				{
 					Value = "ERR: " + ret.ToString();
@@ -35,7 +41,7 @@ namespace FlashDebugger.Debugger.HxCpp
 			}
 			catch (Exception ex)
 			{
-				Value = ex.ToString();
+				Value = "EX: " + ex.Message;
 			}
 		}
 
