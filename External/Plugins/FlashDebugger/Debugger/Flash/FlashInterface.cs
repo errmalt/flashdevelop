@@ -102,6 +102,7 @@ namespace FlashDebugger.Debugger.Flash
 		private EventWaitHandle m_SuspendWait = new EventWaitHandle(false, EventResetMode.ManualReset);
 		private Boolean m_SuspendWaiting;
 		private int m_activeSession; // 1 is m_session else lookup runningIsolates
+		FlashImmediateProvider immediateProvider;
 
         // Isolates 
         private Dictionary<int, IsolateInfo> runningIsolates;
@@ -155,6 +156,7 @@ namespace FlashDebugger.Debugger.Flash
 			m_HaltTimeout = 7000;
 			m_UpdateDelay = 25;
 			m_CurrentState = DebuggerState.Stopped;
+			immediateProvider = new FlashImmediateProvider(this);
 		}
 
         public bool Initialize()
@@ -1250,6 +1252,11 @@ namespace FlashDebugger.Debugger.Flash
 			}
 
 			return ret;
+		}
+
+		public ImmediateProvider ImmediateProvider
+		{
+			get { return immediateProvider; }
 		}
 
 		private static String replaceInlineReferences(String text, System.Collections.IDictionary parameters)

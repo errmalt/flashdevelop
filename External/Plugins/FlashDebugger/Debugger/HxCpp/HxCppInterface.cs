@@ -41,6 +41,7 @@ namespace FlashDebugger.Debugger.HxCpp
 		bool initialThreadStop;
 		int activeThread;
 		Dictionary<int, HxCppThread> threads;
+		HxCppImmediateProvider immediateProvider;
 
 		public bool Initialize()
 		{
@@ -60,6 +61,8 @@ namespace FlashDebugger.Debugger.HxCpp
 				session = manager.Accept();
 				session.Bind();
 				manager.StopListen();
+
+				immediateProvider = new HxCppImmediateProvider(session);
 
 				if (StartedEvent != null) { StartedEvent(this); };
 				// send some events
@@ -367,6 +370,7 @@ namespace FlashDebugger.Debugger.HxCpp
 
 		public DataNode GetExpressionNode(string expr)
 		{
+			// this should be allowed to throw.
 			return new HxCppDataNode(expr, expr, session);
 		}
 
@@ -397,6 +401,11 @@ namespace FlashDebugger.Debugger.HxCpp
 			HxCppThread[] ret = new HxCppThread[threads.Count];
 			threads.Values.CopyTo(ret, 0);
 			return ret;
+		}
+
+		public ImmediateProvider ImmediateProvider
+		{
+			get { return immediateProvider; }
 		}
 
 		#region Event helpers

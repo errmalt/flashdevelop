@@ -61,22 +61,7 @@ namespace FlashDebugger.Controls
                 {
                     this.history.Add(line);
                     this.historyPos = this.history.Count;
-                    if (line == "swfs")
-                    {
-                        this.textBox.Text += processSwfs();
-                    }
-                    else if (line.StartsWith("p "))
-                    {
-                        this.textBox.Text += processExpr(line.Substring(2));
-                    }
-                    else if (line.StartsWith("g "))
-                    {
-                        this.textBox.Text += processGlobal(line.Substring(2));
-                    }
-                    else
-                    {
-                        this.textBox.Text += "Commands: swfs, p <exptr>, g <value id>";
-                    }
+					this.textBox.Text += PluginMain.debugManager.DebuggerInterface.ImmediateProvider.ProcessLine(line);
                 }
                 catch (Exception ex)
                 {
@@ -87,38 +72,6 @@ namespace FlashDebugger.Controls
                 this.textBox.ScrollToCaret();
             }
         }
-
-        private string processSwfs()
-        {
-                string ret = "";
-
-                foreach (SwfInfo info in PluginMain.debugManager.FlashInterface.Session.getSwfs())
-                {
-					if (info == null) continue;
-                    ret += info.getPath() + "\tswfsize " + info.getSwfSize() + "\tprocesscomplete " + info.isProcessingComplete() + "\tunloaded " + info.isUnloaded() + "\turl " + info.getUrl() + "\tsourcecount "+info.getSourceCount(PluginMain.debugManager.FlashInterface.Session) + "\r\n";
-                }
-                return ret;
-        }
-
-        private string processExpr(string expr)
-        {
-            IASTBuilder builder = new ASTBuilder(true);
-            ValueExp exp = builder.parse(new java.io.StringReader(expr));
-            var ctx = new ExpressionContext(PluginMain.debugManager.FlashInterface.Session, PluginMain.debugManager.FlashInterface.Session.getFrames()[PluginMain.debugManager.CurrentFrame]);
-            var obj = exp.evaluate(ctx);
-            if (obj is Variable) return ctx.FormatValue(((Variable)obj).getValue());
-            if (obj is Value) return ctx.FormatValue((Value)obj);
-            return obj.toString();
-        }
-
-        private string processGlobal(string expr)
-        {
-            var val = PluginMain.debugManager.FlashInterface.Session.getGlobal(expr);
-            //var val = PluginMain.debugManager.FlashInterface.Session.getValue(Convert.ToInt64(expr));
-            var ctx = new ExpressionContext(PluginMain.debugManager.FlashInterface.Session, PluginMain.debugManager.FlashInterface.Session.getFrames()[PluginMain.debugManager.CurrentFrame]);
-            return ctx.FormatValue(val);
-        }
-
         private void clearAllToolStripMenuItem_Click(object sender, EventArgs e)
         {
             this.textBox.Clear();

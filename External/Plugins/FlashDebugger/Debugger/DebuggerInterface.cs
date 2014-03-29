@@ -61,5 +61,7 @@ namespace FlashDebugger.Debugger
 		DbgThread[] GetThreads();
 		int ActiveThreadId { get; set; }
 
+		ImmediateProvider ImmediateProvider { get; }
+
     }
 }
