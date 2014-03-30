@@ -122,7 +122,7 @@ namespace FlashDebugger.Debugger.HxCpp
 					return objectCache[i];
 				default:
 					// unknown
-					throw new NotImplementedException("Unknown haxe serializatio prefix "+(char)pref);
+					throw new NotImplementedException("Unknown haxe serialization prefix "+(char)pref);
 			}
 		}
 
