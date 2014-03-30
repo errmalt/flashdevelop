@@ -5,6 +5,7 @@ using FlashDebugger.Debugger.HxCpp.Server;
 using PluginCore.Managers;
 using System.Net.Sockets;
 using FlashDebugger.Controls;
+using PluginCore.Localization;
 
 namespace FlashDebugger.Debugger.HxCpp
 {
@@ -131,6 +132,8 @@ namespace FlashDebugger.Debugger.HxCpp
 					//Message.ThreadStopped x;
 					// store current location?
 					frames = null;
+					// get threadStatus
+					getFrames();
 
 					// the first thread stop is used to load breakpoints
 					if (initialThreadStop)
@@ -148,33 +151,66 @@ namespace FlashDebugger.Debugger.HxCpp
 						continue;
 					}
 
-					// if we are already suspended, lets not call PauseEvent again.
-					// This was happening when the debugger thread encountered strange errors and then the loop would kill FD.
-					if (!IsDebuggerSuspended)
+					if (threadStatus is ThreadStatus.StoppedBreakpoint)
 					{
+						TraceManager.AddAsync("Thread " + ev.number + ": Breakpoint in "+ev.functionName+" on "+ev.fileName+":"+ev.lineNumber);
+						if (!IsDebuggerSuspended)
+						{
+							threads[ev.number].IsSuspended = true;
+							ActiveThreadId = ev.number;
+							OnBreakpointEvent();
+						}
+						else
+						{
+							OnThreadsEvent();
+						}
+					}
+					if (threadStatus is ThreadStatus.StoppedCriticalError)
+					{
+						// switch active thread?
+						StringBuilder sb = new StringBuilder();
+						sb.Append(TextHelper.GetString("Info.LinePrefixWhenDisplayingFault"));
+						sb.Append(" Critical Error");
+						sb.Append(TextHelper.GetString("Info.InformationAboutFault"));
+						sb.Append(((ThreadStatus.StoppedCriticalError)threadStatus).description);
+						TraceManager.AddAsync("Thread " + ev.number + ": " + sb.ToString(), 3);
+						OnFaultEvent();
+					}
+					if (threadStatus is ThreadStatus.StoppedImmediate)
+					{
+						// switch active thread?
 						threads[ev.number].IsSuspended = true;
 						ActiveThreadId = ev.number;
-						if (BreakpointEvent != null) { BreakpointEvent(this); }
+						OnStepEvent();
+					}
+					if (threadStatus is ThreadStatus.StoppedUncaughtException)
+					{
+						// switch active thread?
+						StringBuilder sb = new StringBuilder();
+						sb.Append(TextHelper.GetString("Info.LinePrefixWhenDisplayingFault"));
+						sb.Append(" Uncaught Exception");
+						TraceManager.AddAsync("Thread " + ev.number + ": " + sb.ToString(), 3);
+						OnFaultEvent();
 					}
 				}
 				if (e is Message.ThreadStarted)
 				{
 					Message.ThreadStarted ev = e as Message.ThreadStarted;
 					threads[ev.number].IsSuspended = false;
-					OnThreads();
+					OnThreadsEvent();
 				}
 				if (e is Message.ThreadCreated)
 				{
 					Message.ThreadCreated ev = e as Message.ThreadCreated;
 					threads.Add(ev.number, new HxCppThread(ev.number));
-					OnThreads();
+					OnThreadsEvent();
 				}
 				if (e is Message.ThreadTerminated)
 				{
 					Message.ThreadTerminated ev = e as Message.ThreadTerminated;
 					threads.Remove(ev.number);
 					// check current thread?
-					OnThreads();
+					OnThreadsEvent();
 				}
 				
 
@@ -303,6 +339,7 @@ namespace FlashDebugger.Debugger.HxCpp
 		}
 
 		private FrameList.Frame[] frames = null;
+		private ThreadStatus threadStatus = null;
 
 		private FrameList.Frame[] getFrames()
 		{
@@ -310,6 +347,7 @@ namespace FlashDebugger.Debugger.HxCpp
 			{
 				Message.ThreadsWhere msg = (Message.ThreadsWhere)session.Request(Command.WhereCurrentThread(false));
 				List<ThreadWhereList.Where> tl = MessageUtil.ToList(msg.list);
+				threadStatus = tl[0].status;
 				List<FrameList.Frame> fl = MessageUtil.ToList(tl[0].frameList);
 				frames = fl.ToArray();
 			}
@@ -391,7 +429,7 @@ namespace FlashDebugger.Debugger.HxCpp
 					}
 					session.Request(Command.SetCurrentThread(value));
 					activeThread = value;
-					OnThreads();
+					OnThreadsEvent();
 				}
 			}
 		}
@@ -409,11 +447,32 @@ namespace FlashDebugger.Debugger.HxCpp
 		}
 
 		#region Event helpers
-		public virtual void OnThreads()
+		public virtual void OnThreadsEvent()
 		{
 			if (ThreadsEvent != null)
 			{
 				ThreadsEvent(this);
+			}
+		}
+		public virtual void OnFaultEvent()
+		{
+			if (FaultEvent != null)
+			{
+				FaultEvent(this);
+			}
+		}
+		public virtual void OnStepEvent()
+		{
+			if (StepEvent != null)
+			{
+				StepEvent(this);
+			}
+		}
+		public virtual void OnBreakpointEvent()
+		{
+			if (BreakpointEvent != null)
+			{
+				BreakpointEvent(this);
 			}
 		}
 		#endregion
