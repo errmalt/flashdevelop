@@ -283,7 +283,7 @@ namespace FlashDebugger.Controls
             dataNode.IsEditing = true;
             string r = dataNode.Value;
             dataNode.IsEditing = e;
-            if (r.Length > 300) r = r.Substring(0, 300) + "[...]";
+            if (r != null && r.Length > 300) r = r.Substring(0, 300) + "[...]";
             return r;
         }
 
