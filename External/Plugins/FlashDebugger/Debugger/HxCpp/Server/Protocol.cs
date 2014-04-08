@@ -65,7 +65,16 @@ namespace FlashDebugger.Debugger.HxCpp.Server
 			}
 
 			byte[] ret = new byte[len];
-			socket.Receive(ret, len, SocketFlags.None);
+			int read = 0;
+			while (len > read)
+			{
+				int r = socket.Receive(ret, read, len, SocketFlags.None);
+				if (r == 0)
+				{
+					throw new Exception("EOF while reading from debug socket");
+				}
+				read += r;
+			}
 			//PluginCore.Managers.TraceManager.AddAsync("readFrame " + Encoding.ASCII.GetString(lenBuf) +": " +Encoding.ASCII.GetString(ret), -1);
 			return ret;
 		}
