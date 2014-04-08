@@ -459,7 +459,7 @@ namespace FlashDebugger.Debugger.HxCpp.Server
 				Item ret = new Item();
 				ret.type = (string)haxeEnum.arguments[0];
 				ret.value = (string)haxeEnum.arguments[1];
-				ret.children = VariableNameList.FromEnum((HaxeEnum)haxeEnum.arguments[2]);
+				ret.children = Array.ConvertAll<Object, VariableName>((Object[])haxeEnum.arguments[2], item => VariableName.FromEnum((HaxeEnum)item));
 				return ret;
 			}
 			if (haxeEnum.constructor == "NoItem")
@@ -474,10 +474,10 @@ namespace FlashDebugger.Debugger.HxCpp.Server
 		{
 			public string type { get; set; }
 			public string value { get; set; }
-			public VariableNameList children { get; set; }
+			public VariableName[] children { get; set; }
 			public override string ToString()
 			{
-				return "[VariableValue.Item(type=" + type + ", value=" + value + ", children=" + children + ")]";
+				return "[VariableValue.Item(type=" + type + ", value=" + value + ", children=VariableName[" + String.Join(", ", Array.ConvertAll<Object, String>(children, Convert.ToString)) + "])]";
 			}
 		}
 
@@ -517,46 +517,6 @@ namespace FlashDebugger.Debugger.HxCpp.Server
 			public override string ToString()
 			{
 				return "[VariableName.Variable(name=" + name + ", fullName=" + fullName + ", isStatic=" + isStatic + ", value=" + value + ")]";
-			}
-		}
-
-	}
-
-	class VariableNameList
-	{
-		public static VariableNameList FromEnum(HaxeEnum haxeEnum)
-		{
-			if (haxeEnum.name != "org.flashdevelop.cpp.debugger.VariableNameList") { throw new InvalidCastException("Trying to cast HaxeEnum " + haxeEnum.name + " to org.flashdevelop.cpp.debugger.Message"); }
-			if (haxeEnum.constructor == "Terminator")
-			{
-				Terminator ret = new Terminator();
-				return ret;
-			}
-			if (haxeEnum.constructor == "Element")
-			{
-				Element ret = new Element();
-				ret.variable = VariableName.FromEnum((HaxeEnum)haxeEnum.arguments[0]);
-				ret.next = VariableNameList.FromEnum((HaxeEnum)haxeEnum.arguments[1]);
-				return ret;
-			}
-			throw new InvalidCastException("Unknown constructor " + haxeEnum.constructor + " for HaxeEnum " + haxeEnum.name);
-		}
-
-		public class Terminator : VariableNameList
-		{
-			public override string ToString()
-			{
-				return "[VariableNameList.Terminator()]";
-			}
-		}
-
-		public class Element : VariableNameList
-		{
-			public VariableName variable { get; set; }
-			public VariableNameList next { get; set; }
-			public override string ToString()
-			{
-				return "[VariableNameList.Element(variable=" + variable + ", next=" + next + ")]";
 			}
 		}
 
@@ -647,6 +607,12 @@ namespace FlashDebugger.Debugger.HxCpp.Server
 			if (haxeEnum.constructor == "Files")
 			{
 				Files ret = new Files();
+				ret.list = Array.ConvertAll<Object, String>((Object[])haxeEnum.arguments[0], item => (String)item);
+				return ret;
+			}
+			if (haxeEnum.constructor == "FilesFullPath")
+			{
+				FilesFullPath ret = new FilesFullPath();
 				ret.list = Array.ConvertAll<Object, String>((Object[])haxeEnum.arguments[0], item => (String)item);
 				return ret;
 			}
@@ -913,6 +879,15 @@ namespace FlashDebugger.Debugger.HxCpp.Server
 			public override string ToString()
 			{
 				return "[Message.Files(list=string[" + String.Join(", ", list) + "])]";
+			}
+		}
+
+		public class FilesFullPath : Message
+		{
+			public String[] list { get; set; }
+			public override string ToString()
+			{
+				return "[Message.FilesFullPath(list=string[" + String.Join(", ", list) + "])]";
 			}
 		}
 

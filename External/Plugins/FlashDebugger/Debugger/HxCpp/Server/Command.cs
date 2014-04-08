@@ -6,13 +6,15 @@ namespace FlashDebugger.Debugger.HxCpp.Server
 {
 	class Command : HaxeEnum
 	{
-		private Command(string constructor):base("org.flashdevelop.cpp.debugger.Command", constructor) {}
+		private Command(string constructor) : base("org.flashdevelop.cpp.debugger.Command", constructor) { }
 
 		public static Command Exit() { Command cmd = new Command("Exit"); return cmd; }
 		// Response: Exited
 		public static Command Detach() { Command cmd = new Command("Detach"); return cmd; }
 		// Response: Detached
 		public static Command Files() { Command cmd = new Command("Files"); return cmd; }
+		// Response: StringList
+		public static Command FilesFullPath() { Command cmd = new Command("FilesFullPath"); return cmd; }
 		// Response: StringList
 		public static Command Classes() { Command cmd = new Command("Classes"); return cmd; }
 		// Response: StringList

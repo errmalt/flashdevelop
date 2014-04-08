@@ -245,6 +245,15 @@ namespace FlashDebugger.Debugger.HxCpp
 			// add new ones
 			// todo, cache this in session, should not change while running, we don't dyn load anything.. right?
 			string[] fres = ((Message.Files)session.Request(Command.Files())).list;
+			string[] fullres = ((Message.FilesFullPath)session.Request(Command.FilesFullPath())).list;
+			HxCppSourceFile.Clear();
+			for (int i = 0; i < fres.Length; i++)
+			{
+				if (i < fullres.Length)
+				{
+					HxCppSourceFile.MapAdd(fres[i], fullres[i]);
+				}
+			}
 			Dictionary<string, string> map = new Dictionary<string, string>(fres.Length);
 			foreach (string f in fres)
 			{

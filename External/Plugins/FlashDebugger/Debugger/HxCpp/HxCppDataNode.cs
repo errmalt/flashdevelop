@@ -10,7 +10,7 @@ namespace FlashDebugger.Debugger.HxCpp
 	{
 		private Session session;
 		private VariableValue.Item item;
-		private List<VariableName> children;
+		private VariableName[] children;
 		private string fullName;
 
 		public HxCppDataNode(string name, string fullName, Session session)
@@ -25,7 +25,7 @@ namespace FlashDebugger.Debugger.HxCpp
 				{
 					Message.Variable var_ = (Message.Variable)ret;
 					item = (VariableValue.Item)var_.value;
-					children = MessageUtil.ToList(item.children);
+					children = item.children;
 					Value = item.value;
 				}
 				else if (ret is Message.ErrorEvaluatingExpression)
@@ -75,7 +75,7 @@ namespace FlashDebugger.Debugger.HxCpp
 		{
 			get
 			{
-				return children == null || children.Count == 0;
+				return children == null || children.Length == 0;
 			}
 		}
 
@@ -100,18 +100,34 @@ namespace FlashDebugger.Debugger.HxCpp
 		{
 			// todo
 			Nodes.Clear();
-            //DataNode inheritedNode = new DataNode("[inherited]");
-            //List<DataNode> nodes = new List<DataNode>();
-			//Nodes.Add(
 			if (children == null) return;
-			List<DataNode> nodes = new List<DataNode>(children.Count);
+			List<DataNode> nodes = new List<DataNode>(children.Length);
+			//List<DataNode> inherited = new List<DataNode>();
+			List<DataNode> statics = new List<DataNode>();
 			foreach (VariableName child in children)
 			{
 				if (child is VariableName.Variable)
 				{
 					VariableName.Variable varchild = (VariableName.Variable)child;
-					nodes.Add(new HxCppDataNode(varchild.name, varchild.fullName, session));
+					if (varchild.isStatic)
+					{
+						statics.Add(new HxCppDataNode(varchild.name, varchild.fullName, session));
+					}
+					else
+					{
+						nodes.Add(new HxCppDataNode(varchild.name, varchild.fullName, session));
+					}
 				}
+			}
+			if (statics.Count > 0)
+			{
+				DataNode staticNode = new DataNode("[static]");
+				statics.Sort();
+				foreach (DataNode item in statics)
+				{
+					staticNode.Nodes.Add(item);
+				}
+				Nodes.Add(staticNode);
 			}
 			nodes.Sort();
 			foreach (DataNode item in nodes)

@@ -83,6 +83,18 @@ namespace FlashDebugger.Debugger.HxCpp
 			return null;
 		}
 
+		public static void MapAdd(string shortFileName, string fullFileName)
+		{
+			Char pathSeparator = Path.DirectorySeparatorChar;
+			shortFileName = shortFileName.Replace('/', pathSeparator);
+			// small hack. if our local file has drive letter in lower case, change it to upper case
+			if (fullFileName.Substring(1, 1) == ":" && Char.IsLower(fullFileName, 0))
+			{
+				fullFileName = fullFileName.Substring(0, 1).ToUpper() + fullFileName.Substring(1);
+			}
+			pathMap.Add(shortFileName, fullFileName);
+		}
+
 		public static void Clear()
 		{
 			pathMap.Clear();
