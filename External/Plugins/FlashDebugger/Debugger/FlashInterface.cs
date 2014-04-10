@@ -1132,6 +1132,7 @@ namespace FlashDebugger
                             if (l != null)
                             {
                                 breakpointLocations.Add(bp, l);
+								bp.InternalData = true; // we just mark it here, so BreakPointManager knows it's active
                             }
 						}
 					}
@@ -1140,9 +1141,10 @@ namespace FlashDebugger
 				{
 					if (bp.IsDeleted || !bp.IsEnabled)
 					{
-						// todo, i_Session does not have a clearBreakpoint method, m_Session clears them all. optimize out extra loops
+						// i_Session does not have a clearBreakpoint method, we use m_Session because each Location also carries isolate id
 						m_Session.clearBreakpoint(breakpointLocations[bp]);
 						breakpointLocations.Remove(bp);
+						bp.InternalData = null;
 					}
 				}
 			}
