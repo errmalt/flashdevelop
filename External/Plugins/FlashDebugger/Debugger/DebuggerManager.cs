@@ -59,7 +59,6 @@ namespace FlashDebugger
 			m_HxCppInterface = new HxCppInterface();
 			registerInterfaceEvents(m_HxCppInterface);
 			SelectDebugger(DebuggerEngine.Flash);
-			m_FlashInterface.ThreadsEvent += new DebuggerEventHandler(m_FlashInterface_ThreadsEvent);
         }
 
         private void registerInterfaceEvents(DebuggerInterface debugger)
@@ -75,7 +74,8 @@ namespace FlashDebugger
             debugger.UnknownHaltEvent += new DebuggerEventHandler(flashInterface_UnknownHaltEvent);
             debugger.ProgressEvent += new DebuggerProgressEventHandler(flashInterface_ProgressEvent);
 			debugger.TraceEvent += new TraceEventHandler(flashInterface_TraceEvent);
-        }
+			debugger.ThreadsEvent += new DebuggerEventHandler(m_FlashInterface_ThreadsEvent);
+		}
 
         /*
         private void unregisterInterfaceEvents()
@@ -438,17 +438,7 @@ namespace FlashDebugger
         /// </summary>
 		void m_FlashInterface_ThreadsEvent(object sender)
 		{
-			if (FlashInterface.IsDebuggerSuspended)
-			{
-				// TODO there will be redunandt calls
-				UpdateUI(DebuggerState.BreakHalt);
-			}
-			else
-			{
-				// TODO should get a signal that thread has changed, keep local number...
-				UpdateThreadsUI();
-				UpdateMenuState(DebuggerState.Running);
-			}
+			UpdateThreadsUI();
 		}
 
         /// <summary>

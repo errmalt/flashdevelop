@@ -57,6 +57,7 @@ namespace FlashDebugger.Debugger.HxCpp
 			try
 			{
 				initialThreadStop = true;
+				activeThread = 0;
 
 				manager.Listen();
 				session = manager.Accept();
@@ -129,11 +130,6 @@ namespace FlashDebugger.Debugger.HxCpp
 				if (e is Message.ThreadStopped)
 				{
 					Message.ThreadStopped ev = e as Message.ThreadStopped;
-					//Message.ThreadStopped x;
-					// store current location?
-					frames = null;
-					// get threadStatus
-					getFrames();
 
 					// the first thread stop is used to load breakpoints
 					if (initialThreadStop)
@@ -151,46 +147,65 @@ namespace FlashDebugger.Debugger.HxCpp
 						continue;
 					}
 
-					if (threadStatus is ThreadStatus.StoppedBreakpoint)
+					// chcek if we are in this thread or not suspended
+
+					bool sendEvent = true;
+
+					if (ActiveThreadId != ev.number && IsDebuggerSuspended)
 					{
-						TraceManager.AddAsync("Thread " + ev.number + ": Breakpoint in "+ev.functionName+" on "+ev.fileName+":"+ev.lineNumber);
-						if (!IsDebuggerSuspended)
+						sendEvent = false;
+					}
+
+					threads[ev.number].IsSuspended = true;
+
+					Message.ThreadsWhere msg = (Message.ThreadsWhere)session.Request(Command.WhereAllThreads());
+					List<ThreadWhereList.Where> tl = MessageUtil.ToList(msg.list);
+					foreach (ThreadWhereList.Where w in tl)
+					{
+						if (threads.ContainsKey(w.number))
 						{
-							threads[ev.number].IsSuspended = true;
-							ActiveThreadId = ev.number;
-							OnBreakpointEvent();
-						}
-						else
-						{
-							OnThreadsEvent();
+							threads[w.number].ThreadStatus = w.status;
 						}
 					}
-					if (threadStatus is ThreadStatus.StoppedCriticalError)
+
+					if (threads[ev.number].ThreadStatus is ThreadStatus.StoppedBreakpoint)
+					{
+						TraceManager.AddAsync("Thread " + ev.number + ": Breakpoint in "+ev.functionName+" on "+ev.fileName+":"+ev.lineNumber);
+					}
+					if (threads[ev.number].ThreadStatus is ThreadStatus.StoppedCriticalError)
 					{
 						// switch active thread?
 						StringBuilder sb = new StringBuilder();
 						sb.Append(TextHelper.GetString("Info.LinePrefixWhenDisplayingFault"));
 						sb.Append(" Critical Error");
 						sb.Append(TextHelper.GetString("Info.InformationAboutFault"));
-						sb.Append(((ThreadStatus.StoppedCriticalError)threadStatus).description);
+						sb.Append(((ThreadStatus.StoppedCriticalError)threads[ev.number].ThreadStatus).description);
 						TraceManager.AddAsync("Thread " + ev.number + ": " + sb.ToString(), 3);
-						OnFaultEvent();
 					}
-					if (threadStatus is ThreadStatus.StoppedImmediate)
+					if (threads[ev.number].ThreadStatus is ThreadStatus.StoppedImmediate)
 					{
-						// switch active thread?
-						threads[ev.number].IsSuspended = true;
-						ActiveThreadId = ev.number;
-						OnStepEvent();
+						// ??
+						//OnStepEvent();
 					}
-					if (threadStatus is ThreadStatus.StoppedUncaughtException)
+					if (threads[ev.number].ThreadStatus is ThreadStatus.StoppedUncaughtException)
 					{
 						// switch active thread?
 						StringBuilder sb = new StringBuilder();
 						sb.Append(TextHelper.GetString("Info.LinePrefixWhenDisplayingFault"));
 						sb.Append(" Uncaught Exception");
 						TraceManager.AddAsync("Thread " + ev.number + ": " + sb.ToString(), 3);
-						OnFaultEvent();
+						//OnFaultEvent();
+					}
+					if (sendEvent)
+					{
+						ActiveThreadId = ev.number;
+						frames = null;
+						getFrames();
+						OnBreakpointEvent();
+					}
+					else
+					{
+						OnThreadsEvent();
 					}
 				}
 				if (e is Message.ThreadStarted)

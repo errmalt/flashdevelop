@@ -1,6 +1,7 @@
 ﻿using System;
 using System.Collections.Generic;
 using System.Text;
+using FlashDebugger.Debugger.HxCpp.Server;
 
 namespace FlashDebugger.Debugger.HxCpp
 {
@@ -35,5 +36,11 @@ namespace FlashDebugger.Debugger.HxCpp
 		}
 
 		#endregion
+
+		public ThreadStatus ThreadStatus
+		{
+			get;
+			set;
+		}
 	}
 }
