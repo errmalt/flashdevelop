@@ -261,7 +261,14 @@ namespace FlashDebugger.Debugger.Flash
 						if (m_RequestResume)
 						{
 							// resume before we disconnect, this is in case of ExceptionHalt
-							m_Session.resume(); // just throw for now
+							if (ActiveThreadId > 1)
+							{
+								runningIsolates[ActiveThreadId].i_Session.resume();
+							}
+							else
+							{
+								m_Session.resume(); // just throw for now
+							}
 							if (ThreadsEvent != null) ThreadsEvent(this);
 						}
                         continue;
@@ -273,11 +280,25 @@ namespace FlashDebugger.Debugger.Flash
                         {
                             if (m_StepResume)
                             {
-                                m_Session.stepContinue();
-                        }
+								if (ActiveThreadId > 1)
+								{
+									runningIsolates[ActiveThreadId].i_Session.stepContinue();
+								}
+								else
+								{
+									m_Session.stepContinue();
+								}
+							}
                             else
                             {
-                                m_Session.resume();
+								if (ActiveThreadId > 1)
+								{
+									runningIsolates[ActiveThreadId].i_Session.resume();
+								}
+								else
+								{
+									m_Session.resume();
+								}
                             }
 							if (ThreadsEvent != null) ThreadsEvent(this);
                         }
@@ -445,7 +466,7 @@ namespace FlashDebugger.Debugger.Flash
                                 m_CurrentState = DebuggerState.Pausing;
                                 try
                                 {
-                                    m_Session.suspend();
+									m_Session.suspend();
                                 }
                                 catch {} // No crash here please...
                                 if (!haveConnection()) // no connection => dump state and end
@@ -481,7 +502,15 @@ namespace FlashDebugger.Debugger.Flash
                             }
                         }
                     }
-                    // sleep for a bit, then process our events.
+
+					if (m_RequestPause && ActiveThreadId > 1 && !runningIsolates[ActiveThreadId].i_Session.isSuspended())
+					{
+						//m_RequestPause = false;
+						//m_CurrentState = DebuggerState.Pausing;
+						//runningIsolates[ActiveThreadId].i_Session.suspend();
+					}
+
+					// sleep for a bit, then process our events.
 
                     try
                     {
@@ -703,7 +732,7 @@ namespace FlashDebugger.Debugger.Flash
 					if (be.isolateId > 1 && runningIsolates.ContainsKey(be.isolateId))
 					{
 						// switch only if we are not in break mode already!
-						if (!IsDebuggerSuspended)
+						if (ActiveThreadId == be.isolateId || !IsDebuggerSuspended)
 						{
 							// todo, check for valid id?
 							ActiveThreadId = be.isolateId;
@@ -929,6 +958,7 @@ namespace FlashDebugger.Debugger.Flash
 				if (runningIsolates[ActiveThreadId].i_Session.isSuspended())
 				{
 					runningIsolates[ActiveThreadId].i_Session.stepOver();
+					m_SuspendWait.Set();
 				}
 				return;
 			}
@@ -946,6 +976,7 @@ namespace FlashDebugger.Debugger.Flash
 				if (runningIsolates[ActiveThreadId].i_Session.isSuspended())
 				{
 					runningIsolates[ActiveThreadId].i_Session.stepInto();
+					m_SuspendWait.Set();
 				}
 				return;
 			}
@@ -963,7 +994,10 @@ namespace FlashDebugger.Debugger.Flash
 			{
 				if (runningIsolates[ActiveThreadId].i_Session.isSuspended())
 				{
-					runningIsolates[ActiveThreadId].i_Session.resume(); // why not stepContinue() ?
+					m_StepResume = true;
+					m_RequestResume = true;
+					m_SuspendWait.Set();
+					//runningIsolates[ActiveThreadId].i_Session.resume(); // why not stepContinue() ?
 				}
 				return;
 			}
@@ -982,7 +1016,9 @@ namespace FlashDebugger.Debugger.Flash
 			{
 				if (runningIsolates[ActiveThreadId].i_Session.isSuspended())
 				{
-					runningIsolates[ActiveThreadId].i_Session.resume();
+					m_RequestResume = true;
+					m_SuspendWait.Set();
+					//runningIsolates[ActiveThreadId].i_Session.resume();
 				}
 				return;
 			}
@@ -1000,6 +1036,7 @@ namespace FlashDebugger.Debugger.Flash
 			{
 				if (!runningIsolates[ActiveThreadId].i_Session.isSuspended())
 				{
+					//m_RequestPause = true;
 					runningIsolates[ActiveThreadId].i_Session.suspend();
 				}
 				return;
@@ -1157,7 +1194,11 @@ namespace FlashDebugger.Debugger.Flash
 						if (files.ContainsKey(bp.FileFullPath) && files[bp.FileFullPath] != 0)
 						{
 							Location l = (i_Session != null) ? i_Session.setBreakpoint(files[bp.FileFullPath], bp.Line + 1) : m_Session.setBreakpoint(files[bp.FileFullPath], bp.Line + 1);
-							breakpointLocations.Add(bp, l);
+							if (l != null)
+							{
+								breakpointLocations.Add(bp, l);
+								bp.InternalData = true; // we just mark it here, so BreakPointManager knows it's active
+							}
 						}
 					}
 				}
@@ -1165,9 +1206,10 @@ namespace FlashDebugger.Debugger.Flash
 				{
 					if (bp.IsDeleted || !bp.IsEnabled)
 					{
-						// todo, i_Session does not have a clearBreakpoint method, m_Session clears them all. optimize out extra loops
+						// i_Session does not have a clearBreakpoint method, we use m_Session because each Location also carries isolate id
 						m_Session.clearBreakpoint(breakpointLocations[bp]);
 						breakpointLocations.Remove(bp);
+						bp.InternalData = null;
 					}
 				}
 			}
