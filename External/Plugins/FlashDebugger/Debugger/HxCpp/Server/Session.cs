@@ -67,7 +67,7 @@ namespace FlashDebugger.Debugger.HxCpp.Server
 			Protocol.WriteCommand(socket, Command.CommandId(cmdId, cmd));
 
 			int timeout = 5000;
-			bool pass2 = false;
+			bool pass1 = true;
 			while (true)
 			{
 				lock (responseQ)
@@ -80,12 +80,11 @@ namespace FlashDebugger.Debugger.HxCpp.Server
 						return res;
 					}
 				}
-				if (pass2)
+				if (!pass1)
 				{
 					break;
 				}
-				responseWaitHandle.WaitOne(timeout);
-				pass2 = true;
+				pass1 = responseWaitHandle.WaitOne(timeout);
 			}
 			throw new Exception("No response in time");
 		}
