@@ -486,6 +486,7 @@ namespace ASCompletion.Model
         private bool inAbstract;
         private bool inGeneric;
         private bool inValue;
+        private bool hadValue;
         private bool inConst;
         private bool inType;
         private bool inAnonType;
@@ -615,6 +616,7 @@ namespace ASCompletion.Model
             inTypedef = false;
             inAbstract = false;
             inValue = false;
+            hadValue = false;
             inConst = false;
             inType = false;
             inGeneric = false;
@@ -694,7 +696,7 @@ namespace ASCompletion.Model
                                 inString = 2;
                             }
                             // preprocessor statements
-                            else if (c1 == '#' && handleDirectives)
+                            else if (c1 == '#' && handleDirectives && i < len)
                             {
                                 int ls = i - 2;
                                 inlineDirective = false;
@@ -979,6 +981,7 @@ namespace ASCompletion.Model
                     {
                         inType = false;
                         inValue = false;
+                        hadValue = false;
                         inGeneric = false;
                         valueLength = 0;
                         length = 0;
@@ -1080,7 +1083,7 @@ namespace ASCompletion.Model
                         }
                         inValue = false;
                         inGeneric = false;
-                        //if (valueLength < VALUE_BUFFER) valueBuffer[valueLength++] = c1;
+                        hadValue = true;
                     }
 
                     // in params, store the default value
@@ -1104,7 +1107,7 @@ namespace ASCompletion.Model
                             if (valueLength < VALUE_BUFFER) valueBuffer[valueLength++] = c1;
                             continue;
                         }
-                        if (stopParser) continue;
+                        if (stopParser || paramBraceCount > 0 || paramSqCount > 0) continue;
                         else if (valueError && c1 == ')') inValue = false;
                         else if (inType && inGeneric && (c1 == '<' || c1 == '.')) continue;
                         else if (inAnonType) continue;
@@ -1113,10 +1116,9 @@ namespace ASCompletion.Model
                 }
 
                 // store type / parameter value
-                if (!inValue && valueLength > 0)
+                if (hadValue) //!inValue && valueLength > 0)
                 {
-                    string param = /*(valueBuffer[0] == '{' && valueBuffer[0] != '[') ? "..."
-                        :*/ new string(valueBuffer, 0, valueLength);
+                    string param = valueLength > 0 ? new string(valueBuffer, 0, valueLength) : "";
 
                     // get text before the last keyword found
                     if (valueKeyword != null)
@@ -1152,6 +1154,7 @@ namespace ASCompletion.Model
                             }
                         }
                         curMember.Type = param;
+                        length = 0;
                     }
                     // AS3 const or method parameter's default value 
                     else if (version > 2 && (curMember.Flags & FlagType.Variable) > 0)
@@ -1166,6 +1169,7 @@ namespace ASCompletion.Model
                         }
                     }
                     //
+                    hadValue = false;
                     valueLength = 0;
                     valueMember = null;
                     if (!inParams && !(inConst && context != 0) && c1 != '{') continue;
@@ -1198,6 +1202,16 @@ namespace ASCompletion.Model
                 }
                 else
                 {
+                    // function types
+                    if (c1 == '-' && context != 0 && length > 0 && features.hasGenerics && i < len && ba[i] == '>')
+                    {
+                        buffer[length++] = '-';
+                        buffer[length++] = '>';
+                        i++;
+                        hadDot = true;
+                        continue;
+                    }
+
                     // should we evaluate the token?
                     if (hadWS && !hadDot && !inGeneric && length > 0)
                     {
@@ -1234,7 +1248,7 @@ namespace ASCompletion.Model
                                 addChar = true;
                             }
                             // AS3/haXe generics
-                            else if (features.hasGenerics && c1 == '<')
+                            else if (c1 == '<' && features.hasGenerics)
                             {
                                 if (!inValue && i > 2 && length > 1 && i < len - 3
                                     && Char.IsLetterOrDigit(ba[i - 3]) && (Char.IsLetter(ba[i]) || (haXe && ba[i] == '{'))
@@ -1256,6 +1270,7 @@ namespace ASCompletion.Model
                                         evalToken = 0;
                                         inGeneric = true;
                                         inValue = true;
+                                        hadValue = false;
                                         inType = true;
                                         inAnonType = false;
                                         valueLength = 0;
@@ -1271,7 +1286,7 @@ namespace ASCompletion.Model
                                     }
                                 }
                             }
-                            else if (inGeneric && (c1 == ',' || c1 == '.' || c1 == '-' || c1 == '>' || c1 == ':'))
+                            else if (inGeneric && (c1 == ',' || c1 == '.' || c1 == '-' || c1 == '>' || c1 == ':' || c1 == '(' || c1 == ')'))
                             {
                                 hadWS = false;
                                 hadDot = false;
@@ -1294,7 +1309,7 @@ namespace ASCompletion.Model
                             }
                         }
                         // star is valid in import statements
-                        else if (c1 == '*' && version == 3)
+                        else if (c1 == '*' && version >= 3)
                         {
                             addChar = true;
                         }
@@ -1372,6 +1387,7 @@ namespace ASCompletion.Model
                             else if (foundColon && haXe && length == 0) // copy haXe anonymous type
                             {
                                 inValue = true;
+                                hadValue = false;
                                 inType = true;
                                 inAnonType = true;
                                 valueLength = 0;
@@ -1572,6 +1588,7 @@ namespace ASCompletion.Model
                                 if (!inValue && curMember != null)
                                 {
                                     inValue = true;
+                                    hadValue = false;
                                     inConst = (curMember.Flags & FlagType.Constant) > 0;
                                     inType = false;
                                     inGeneric = false;
@@ -1983,6 +2000,7 @@ namespace ASCompletion.Model
                         inTypedef = false;
                         inAbstract = false;
                         inValue = false;
+                        hadValue = false;
                         inConst = false;
                         inType = false;
                         inGeneric = false;
@@ -2024,6 +2042,7 @@ namespace ASCompletion.Model
                 inAbstract = false;
                 inGeneric = false;
                 inValue = false;
+                hadValue = false;
                 inConst = false;
                 if (token != "function") valueMember = null;
                 foundColon = false;
@@ -2413,7 +2432,15 @@ namespace ASCompletion.Model
                     case FlagType.Function:
                         member = new MemberModel();
                         member.Comments = curComment;
+
+                        int t = token.IndexOf('<');
+                        if (t > 0)
+                        {
+                            member.Template = token.Substring(t);
+                            token = token.Substring(0, t); 
+                        }
                         member.Name = token;
+
                         if ((curModifiers & FlagType.Static) == 0) curModifiers |= FlagType.Dynamic;
                         if ((curModifiers & (FlagType.Getter | FlagType.Setter)) == 0)
                             curModifiers |= FlagType.Function;

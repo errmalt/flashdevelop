@@ -21,6 +21,7 @@ using PluginCore.Localization;
 using System.Drawing;
 using System.Reflection;
 using PluginCore.Controls;
+using PluginCore.Helpers;
 
 namespace ASCompletion
 {
@@ -119,7 +120,7 @@ namespace ASCompletion
         private void InitializeControls()
         {
             InitializeComponent();
-
+            treeIcons.ImageSize = ScaleHelper.Scale(new Size(16, 16));
             treeIcons.Images.AddRange( new Bitmap[] {
                 new Bitmap(GetStream("FilePlain.png")),
                 new Bitmap(GetStream("FolderClosed.png")),
@@ -159,6 +160,7 @@ namespace ASCompletion
             });
 
             toolStrip.Renderer = new DockPanelStripRenderer();
+            toolStrip.ImageScalingSize = ScaleHelper.Scale(new Size(16, 16));
             toolStrip.Padding = new Padding(2, 1, 2, 2);
             sortDropDown.Font = PluginBase.Settings.DefaultFont;
             sortDropDown.Image = PluginBase.MainForm.FindImage("444");
@@ -674,7 +676,10 @@ namespace ASCompletion
         private void AddExtend(TreeNodeCollection tree, ClassModel aClass)
         {
             TreeNode folder = new TreeNode(TextHelper.GetString("Info.ExtendsNode"), ICON_FOLDER_CLOSED, ICON_FOLDER_OPEN);
-            //aClass.ResolveExtends();
+
+            //if ((aClass.Flags & FlagType.TypeDef) > 0 && aClass.Members.Count == 0)
+            //    folder.Text = "Defines"; // TODO need a better word I guess
+
             while (aClass.ExtendsType != null && aClass.ExtendsType.Length > 0 
                 && aClass.ExtendsType != "Object" 
                 && (!aClass.InFile.haXe || aClass.ExtendsType != "Dynamic"))

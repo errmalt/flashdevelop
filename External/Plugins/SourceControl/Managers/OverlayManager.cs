@@ -48,10 +48,24 @@ namespace SourceControl.Managers
         {
             if (currentTree != null)
             {
-                if (currentTree.SelectedNode != null && currentTree.SelectedNode.IsEditing)
-                    return; // do not mess with the tree while a node is being edited
-                currentTree.RefreshTree();
+                RefreshNodes(currentTree.Nodes);
                 SelectionChanged();
+            }
+        }
+
+        private void RefreshNodes(TreeNodeCollection nodes)
+        {
+            foreach (TreeNode node in nodes)
+            {
+                if (node is DirectoryNode)
+                {
+                    if (UpdateNodeStatus(node as GenericNode))
+                        RefreshNodes(node.Nodes);
+                }
+                else if (node is FileNode)
+                {
+                    UpdateNodeStatus(node as GenericNode);
+                }
             }
         }
 
@@ -92,7 +106,7 @@ namespace SourceControl.Managers
             UpdateNodeStatus(node);
         }
 
-        void UpdateNodeStatus(GenericNode node)
+        bool UpdateNodeStatus(GenericNode node)
         {
             if (node.Meta == null)
                 node.Meta = new Dictionary<string, object>();
@@ -103,12 +117,14 @@ namespace SourceControl.Managers
             IVCManager currentVC = node.Meta[META_VC] as IVCManager;
             string root = (string)node.Meta[META_ROOT];
 
-            if (currentVC != null)
+            if (currentVC != null && currentTree != null)
             {
                 VCItemStatus status = currentVC.GetOverlay(node.BackingPath, root);
                 node.Meta[META_STATUS] = status;
                 OverlayMap.SetOverlay(status, node, currentTree);
+                return status != VCItemStatus.Ignored;
             }
+            return false;
         }
 
         void LocateVC(GenericNode node)

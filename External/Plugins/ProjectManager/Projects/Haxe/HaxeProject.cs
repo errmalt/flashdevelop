@@ -197,6 +197,14 @@ namespace ProjectManager.Projects.Haxe
             }
             else
             {
+                // SWC libraries
+                if (IsFlashOutput)
+                    foreach (LibraryAsset asset in LibraryAssets)
+                    {
+                        if (asset.IsSwc)
+                            pr.Add("-swf-lib " + asset.Path);
+                    }
+
                 // libraries
                 foreach (string lib in CompilerOptions.Libraries)
                     if (lib.Length > 0)
@@ -346,7 +354,14 @@ namespace ProjectManager.Projects.Haxe
         {
             if (string.IsNullOrEmpty(projectFile) || !File.Exists(projectFile))
                 return null;
-            return Path.GetExtension(projectFile).ToLower() == ".nmml" ? "nme" : "openfl";
+            switch(Path.GetExtension(projectFile).ToLower()){
+                case ".nmml":
+                    return "nme";
+                case ".lime":
+                    return "lime";
+                default:
+                    return "openfl";
+            }
         }
 
         private string GetClassName(string absTarget, string cp)

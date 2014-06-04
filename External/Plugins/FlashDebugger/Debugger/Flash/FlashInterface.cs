@@ -176,7 +176,7 @@ namespace FlashDebugger.Debugger.Flash
 
                     if (flexSDKPath != null && Directory.Exists(flexSDKPath))
                     {
-                        Dictionary<string, string> jvmConfig = JvmConfigHelper.ReadConfig(Path.Combine(flexSDKPath, "bin\\jvm.config"));
+                        Dictionary<string, string> jvmConfig = JvmConfigHelper.ReadConfig(flexSDKPath);
                         String javaHome = JvmConfigHelper.GetJavaHome(jvmConfig, flexSDKPath);
                         if (!String.IsNullOrEmpty(javaHome)) bridgeSetup.JavaHome = javaHome;
                     }
@@ -238,6 +238,7 @@ namespace FlashDebugger.Debugger.Flash
                 }
                 catch (System.Exception){}
                 m_CurrentState = DebuggerState.Running;
+                m_Session.breakOnCaughtExceptions(PluginMain.settingObject.BreakOnThrow);
                 // now poke to see if the player is good enough
                 try
                 {
@@ -539,6 +540,16 @@ namespace FlashDebugger.Debugger.Flash
             }
 		}
 
+		// TODO this has no place here, move outside
+		void settingObject_BreakOnThrowChanged(object sender, EventArgs e)
+        {
+            if (m_CurrentState != DebuggerState.Starting &&
+                m_CurrentState != DebuggerState.Stopped)
+            {
+                m_Session.breakOnCaughtExceptions(PluginMain.settingObject.BreakOnThrow);
+            }
+        }
+
 		internal virtual void initSession()
 		{
 			bool correctVersion = true;
@@ -561,6 +572,7 @@ namespace FlashDebugger.Debugger.Flash
 			m_StepResume = false;
 
             runningIsolates = new Dictionary<int, IsolateInfo>();
+            PluginMain.settingObject.BreakOnThrowChanged += settingObject_BreakOnThrowChanged;
 		}
 
 		/// <summary> If we still have a socket try to send an exit message
@@ -568,6 +580,7 @@ namespace FlashDebugger.Debugger.Flash
 		/// </summary>
 		internal virtual void exitSession()
 		{
+            PluginMain.settingObject.BreakOnThrowChanged -= settingObject_BreakOnThrowChanged;
             // clear out our watchpoint list and displays
 			// keep breakpoints around so that we can try to reapply them if we reconnect
 			if (m_Session != null)
@@ -836,6 +849,11 @@ namespace FlashDebugger.Debugger.Flash
                     sb.Append(TextHelper.GetString("Info.InformationAboutFault")); //$NON-NLS-1$
 					sb.Append(e.information);
 				}
+                if (PluginMain.settingObject.VerboseOutput)
+                {
+                    sb.AppendLine();
+                    sb.Append(e.stackTrace());
+                }
 			}
 
             if (e.isolateId == 1)

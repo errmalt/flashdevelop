@@ -67,6 +67,7 @@ namespace ProjectManager.Controls.TreeView
         {
             this.Renderer = new DockPanelStripRenderer();
             this.Font = PluginCore.PluginBase.Settings.DefaultFont;
+            this.ImageScalingSize = ScaleHelper.Scale(new Size(16, 16));
             NothingToDo.Enabled = false;
             NoProjectOutput.Enabled = false;
         }
@@ -120,7 +121,7 @@ namespace ProjectManager.Controls.TreeView
             foreach (string file in Directory.GetFiles(PathHelper.TemplateDir, "*.fdt"))
             {
                 string name = Path.GetFileNameWithoutExtension(file).ToLower();
-                if (name != "as2" && name != "as3") items.Add(GetGenericAddFile(file));
+                if (name != "as2" && name != "as3" && name != "haxe") items.Add(GetGenericAddFile(file));
             }
             return items.ToArray();
         }

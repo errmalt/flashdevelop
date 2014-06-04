@@ -274,6 +274,7 @@ namespace FlashLogViewer
         private void InitializeContextMenu()
         {
             ContextMenuStrip menu = new ContextMenuStrip();
+            menu.ImageScalingSize = ScaleHelper.Scale(new Size(16, 16));
             menu.Font = PluginBase.Settings.DefaultFont;
             menu.Renderer = new DockPanelStripRenderer(false);
             menu.Items.Add(new ToolStripMenuItem(TextHelper.GetString("Label.ClearLog"), null, new EventHandler(this.ClearOutput)));
@@ -299,8 +300,10 @@ namespace FlashLogViewer
             this.logTextBox.Font = PluginBase.Settings.ConsoleFont;
             this.filterLabel.Font = PluginBase.Settings.DefaultFont;
             this.logComboBox.FlatStyle = PluginBase.Settings.ComboBoxFlatStyle;
+            this.logComboBox.Width = ScaleHelper.Scale(this.logComboBox.Width);
             this.filterComboBox.FlatStyle = PluginBase.Settings.ComboBoxFlatStyle;
             this.toolStrip.Renderer = new DockPanelStripRenderer();
+            this.toolStrip.ImageScalingSize = ScaleHelper.Scale(new Size(16, 16));
             this.refreshTimer = new Timer();
             this.refreshTimer.Interval = this.GetUpdateInterval();
             this.refreshTimer.Tick += new EventHandler(this.RefreshTimerTick);

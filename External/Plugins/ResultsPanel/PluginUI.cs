@@ -57,6 +57,7 @@ namespace ResultsPanel
             this.InitializeContextMenu();
             this.InitializeGraphics();
             this.InitializeTexts();
+            this.InitializeLayout();
             this.ApplySettings();
 		}
 		
@@ -140,6 +141,7 @@ namespace ResultsPanel
 			// 
 			// toolStripFilters
 			// 
+            this.toolStripFilters.ImageScalingSize = ScaleHelper.Scale(new Size(16, 16));
             this.toolStripFilters.CanOverflow = false;
             this.toolStripFilters.LayoutStyle = System.Windows.Forms.ToolStripLayoutStyle.HorizontalStackWithOverflow;
             this.toolStripFilters.Padding = new System.Windows.Forms.Padding(1, 1, 2, 2);
@@ -296,6 +298,15 @@ namespace ResultsPanel
             this.toolStripButtonInfo.Text = "0 " + TextHelper.GetString("Filters.Informations");
             this.toolStripLabelFilter.Text = TextHelper.GetString("Filters.Filter");
             this.entryPath.Width = -2; // Extend last column
+        }
+
+        /// <summary>
+        /// Initializes the custom rendering
+        /// </summary>
+        public void InitializeLayout()
+        {
+            foreach (ColumnHeader column in entriesView.Columns)
+                column.Width = ScaleHelper.Scale(column.Width);
         }
 
         /// <summary>

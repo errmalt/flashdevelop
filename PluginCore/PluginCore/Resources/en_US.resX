@@ -2016,6 +2016,10 @@ Alternatively, Adobe Flash Professional can also be used for syntax checking - p
     <value>&amp;Test Project</value>
     <comment>Modified after 3.3.4</comment>
   </data>
+  <data name="ProjectManager.Label.RunProject" xml:space="preserve">
+    <value>&amp;Run Project</value>
+    <comment>Added after 4.6.1</comment>
+  </data>
   <data name="ProjectManager.Title.CommandLineBuilder" xml:space="preserve">
     <value>Command-Line Builder</value>
   </data>
@@ -4737,11 +4741,11 @@ Custom locales must be an extension of a default locale, e.g. en-US.</value>
     <value>Immediate</value>
   </data>
   <data name="OutputPanel.ToolTip.StartScrolling" xml:space="preserve">
-    <value>Start scrolling</value>
+    <value>Start Scrolling</value>
     <comment>Added after 4.5.2</comment>
   </data>
   <data name="OutputPanel.ToolTip.StopScrolling" xml:space="preserve">
-    <value>Stop scrolling</value>
+    <value>Stop Scrolling</value>
     <comment>Added after 4.5.2</comment>
   </data>
   <data name="ProjectManager.Label.SetDocumentClass" xml:space="preserve">
@@ -5085,5 +5089,17 @@ Custom locales must be an extension of a default locale, e.g. en-US.</value>
   <data name="TaskListPanel.Description.ExploringMode" xml:space="preserve">
     <value>The task exploring mode. Light: current files and manual refresh, Complete: current files, project files and manual refresh.</value>
     <comment>Added after 4.4.3</comment>
+  </data>
+  <data name="FlashDevelop.Description.IndentView" xml:space="preserve">
+    <value>Type of the intendation guide behaviour.</value>
+    <comment>Added after 4.6.0</comment>
+  </data>
+  <data name="FlashDebugger.Description.BreakOnThrow" xml:space="preserve">
+    <value>Break when an exception is thrown, even if it is handled.</value>
+    <comment>Added after 4.6.1</comment>
+  </data>
+  <data name="CodeRefactor.Info.RenamingDirectory" xml:space="preserve">
+    <value>You are renaming a directory. Do you also want to update the references?</value>
+    <comment>Added after 4.6.1</comment>
   </data>
 </root>

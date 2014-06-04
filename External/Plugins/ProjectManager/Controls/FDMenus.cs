@@ -8,6 +8,7 @@ using PluginCore;
 using PluginCore.Utilities;
 using System.Collections.Generic;
 using ProjectManager.Projects;
+using PluginCore.Helpers;
 
 namespace ProjectManager.Controls
 {
@@ -71,7 +72,7 @@ namespace ProjectManager.Controls
             ConfigurationSelector.DropDownStyle = ComboBoxStyle.DropDownList;
             ConfigurationSelector.AutoSize = false;
             ConfigurationSelector.Enabled = false;
-            ConfigurationSelector.Width = 85;
+            ConfigurationSelector.Width = ScaleHelper.Scale(85);
             ConfigurationSelector.Margin = new Padding(1, 0, 0, 0);
             ConfigurationSelector.FlatStyle = PluginBase.MainForm.Settings.ComboBoxFlatStyle;
             ConfigurationSelector.Font = PluginBase.Settings.DefaultFont;
@@ -83,7 +84,7 @@ namespace ProjectManager.Controls
             TargetBuildSelector.DropDownStyle = ComboBoxStyle.DropDown;
             TargetBuildSelector.AutoSize = false;
             TargetBuildSelector.Enabled = false;
-            TargetBuildSelector.Width = 85;
+            TargetBuildSelector.Width = ScaleHelper.Scale(85);
             TargetBuildSelector.Visible = false;
             TargetBuildSelector.Margin = new Padding(1, 0, 0, 0);
             TargetBuildSelector.FlatStyle = PluginBase.MainForm.Settings.ComboBoxFlatStyle;
@@ -151,6 +152,7 @@ namespace ProjectManager.Controls
         public ToolStripMenuItem CloseProject;
         public ToolStripMenuItem OpenResource;
         public ToolStripMenuItem TestMovie;
+        public ToolStripMenuItem RunProject;
         public ToolStripMenuItem BuildProject;
         public ToolStripMenuItem CleanProject;
         public ToolStripMenuItem Properties;
@@ -190,6 +192,10 @@ namespace ProjectManager.Controls
             PluginBase.MainForm.RegisterShortcutItem("ProjectMenu.TestMovie", TestMovie);
             AllItems.Add(TestMovie);
 
+            RunProject = new ToolStripMenuItem(TextHelper.GetString("Label.RunProject"));
+            PluginBase.MainForm.RegisterShortcutItem("ProjectMenu.RunProject", RunProject);
+            AllItems.Add(RunProject);
+
             BuildProject = new ToolStripMenuItem(TextHelper.GetString("Label.BuildProject"));
 			BuildProject.Image = Icons.Gear.Img;
             BuildProject.ShortcutKeys = Keys.F8;
@@ -215,6 +221,7 @@ namespace ProjectManager.Controls
             base.DropDownItems.Add(OpenResource);
             base.DropDownItems.Add(new ToolStripSeparator());
             base.DropDownItems.Add(TestMovie);
+            base.DropDownItems.Add(RunProject);
             base.DropDownItems.Add(BuildProject);
             base.DropDownItems.Add(CleanProject);
             base.DropDownItems.Add(new ToolStripSeparator());

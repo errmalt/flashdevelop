@@ -27,6 +27,7 @@ namespace ScintillaNet
         private bool isHiliteSelected = true;
         private bool useHighlightGuides = true;
 		private static Scintilla sciConfiguration = null;
+        private Enums.IndentView indentView = Enums.IndentView.Real;
 		private Enums.SmartIndent smartIndent = Enums.SmartIndent.CPP;
 		private Hashtable ignoredKeys = new Hashtable();
         private string configLanguage = String.Empty;
@@ -136,6 +137,21 @@ namespace ScintillaNet
                 sciConfiguration = value; 
             }
 		}
+
+        /// <summary>
+        /// Indent view type
+        /// </summary>
+        public Enums.IndentView IndentView
+        {
+            get
+            {
+                return this.indentView;
+            }
+            set
+            {
+                this.indentView = value;
+            }
+        }
 
         /// <summary>
         /// Current configuration language
@@ -1255,7 +1271,7 @@ namespace ScintillaNet
 			}
 			set
 			{
-				SPerform(2132, (uint)(value ? 1 : 0), 0);
+				SPerform(2132, (uint)(value ? (int)this.indentView : 0), 0);
 			}
 		}	
 
@@ -3942,7 +3958,7 @@ namespace ScintillaNet
 		/// </summary>
 		public void LowerCase()
 		{
-            this.ReplaceSel(this.SelText.ToLower());
+            SPerform(2340, 0, 0);
 		}	
 						
 		/// <summary>
@@ -3950,7 +3966,7 @@ namespace ScintillaNet
 		/// </summary>
 		public void UpperCase()
 		{
-            this.ReplaceSel(this.SelText.ToUpper());
+            SPerform(2341, 0, 0);
 		}	
 						
 		/// <summary>
@@ -5506,15 +5522,6 @@ namespace ScintillaNet
                     {
                         i--;
                         ch = (char)this.CharAt(i);
-                    }
-                    if (i == lineStart - 1)
-                    {
-                        ch = (char)this.CharAt(i + 1);
-                        while (i < lineEnd && ch == '\t')
-                        {
-                            i++;
-                            ch = (char)this.CharAt(i + 1);
-                        }
                     }
                     if (i < (lineEnd - 1))
                     {

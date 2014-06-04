@@ -51,22 +51,31 @@ namespace FlashDebugger.Debugger.Flash
 		private static string getLocalPath(SourceFile file)
 		{
 			if (file == null) return null;
-			if (File.Exists(file.getFullPath()))
+			String fileFullPath = file.getFullPath();
+			if (pathMap.ContainsKey(fileFullPath))
 			{
-				return file.getFullPath();
+				return pathMap[fileFullPath];
 			}
-			if (pathMap.ContainsKey(file.getFullPath()))
+			if (File.Exists(fileFullPath))
 			{
-				return pathMap[file.getFullPath()];
+				pathMap[fileFullPath] = fileFullPath;
+				return fileFullPath;
 			}
 			Char pathSeparator = Path.DirectorySeparatorChar;
 			String pathFromPackage = file.getPackageName().ToString().Replace('/', pathSeparator);
+			String fileName = file.getName();
 			foreach (Folder folder in PluginMain.settingObject.SourcePaths)
 			{
-				String localPath = folder.Path + pathSeparator + pathFromPackage + pathSeparator + file.getName();
+				StringBuilder localPathBuilder = new StringBuilder(260/*Windows max path length*/);
+				localPathBuilder.Append(folder.Path);
+				localPathBuilder.Append(pathSeparator);
+				localPathBuilder.Append(pathFromPackage);
+				localPathBuilder.Append(pathSeparator);
+				localPathBuilder.Append(fileName);
+				String localPath = localPathBuilder.ToString();
 				if (File.Exists(localPath))
 				{
-					pathMap[file.getFullPath()] = localPath;
+					pathMap[fileFullPath] = localPath;
 					return localPath;
 				}
 			}
@@ -75,14 +84,23 @@ namespace FlashDebugger.Debugger.Flash
 			{
 				foreach (string cp in project.Classpaths)
 				{
-					String localPath = project.Directory + pathSeparator + cp + pathSeparator + pathFromPackage + pathSeparator + file.getName();
+					StringBuilder localPathBuilder = new StringBuilder(260/*Windows max path length*/);
+					localPathBuilder.Append(project.Directory);
+					localPathBuilder.Append(pathSeparator);
+					localPathBuilder.Append(cp);
+					localPathBuilder.Append(pathSeparator);
+					localPathBuilder.Append(pathFromPackage);
+					localPathBuilder.Append(pathSeparator);
+					localPathBuilder.Append(fileName);
+					String localPath = localPathBuilder.ToString();
 					if (File.Exists(localPath))
 					{
-						pathMap[file.getFullPath()] = localPath;
+						pathMap[fileFullPath] = localPath;
 						return localPath;
 					}
 				}
 			}
+			pathMap[fileFullPath] = null;
 			return null;
 		}
 

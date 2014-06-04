@@ -408,6 +408,23 @@ namespace FlashDevelop.Settings
             set { this.tabIndents = value; }
         }
 
+        [DefaultValue(ScintillaNet.Enums.IndentView.Real)]
+        [DisplayName("Indent Guide Type")]
+        [LocalizedCategory("FlashDevelop.Category.Indenting")]
+        [LocalizedDescription("FlashDevelop.Description.IndentView")]
+        public ScintillaNet.Enums.IndentView IndentView
+        {
+            get 
+            {
+                if ((Int32)this.indentView == 0) this.indentView = ScintillaNet.Enums.IndentView.Real;
+                return this.indentView; 
+            }
+            set
+            {
+                this.indentView = value;
+            }
+        }
+
         [DisplayName("Smart Indent Type")]
         [DefaultValue(ScintillaNet.Enums.SmartIndent.CPP)]
         [LocalizedCategory("FlashDevelop.Category.Indenting")]

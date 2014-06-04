@@ -160,6 +160,7 @@ namespace LayoutManager
         private void InitializeGraphics()
         {
             this.imageList = new ImageList();
+            this.imageList.ImageSize = PluginCore.Helpers.ScaleHelper.Scale(new Size(16, 16));
             this.imageList.ColorDepth = ColorDepth.Depth32Bit;
             this.imageList.TransparentColor = Color.Transparent;
             this.imageList.Images.Add(PluginBase.MainForm.FindImage("48"));
@@ -169,6 +170,7 @@ namespace LayoutManager
             this.imageList.Images.Add(PluginBase.MainForm.FindImage("168"));
             this.imageList.Images.Add(PluginBase.MainForm.FindImage("54"));
             this.layoutsListView.SmallImageList = this.imageList;
+            this.layoutsListView.SmallImageList.ImageSize = ScaleHelper.Scale(new Size(16, 16));
             this.deleteStripButton.Image = this.imageList.Images[3];
             this.saveStripButton.Image = this.imageList.Images[4];
             this.loadStripButton.Image = this.imageList.Images[2];
@@ -177,6 +179,7 @@ namespace LayoutManager
             this.menuDeleteButton.Image = this.imageList.Images[3];
             this.menuSaveButton.Image = this.imageList.Images[4];
             this.menuLoadButton.Image = this.imageList.Images[2];
+            this.toolStrip.ImageScalingSize = ScaleHelper.Scale(new Size(16, 16));
         }
 
         /// <summary>
@@ -185,6 +188,7 @@ namespace LayoutManager
         private void InitializeContextMenu()
         {
             ContextMenuStrip menu = new ContextMenuStrip();
+            menu.ImageScalingSize = PluginCore.Helpers.ScaleHelper.Scale(new Size(16, 16));
             this.menuLoadButton = new ToolStripMenuItem(TextHelper.GetString("Label.LoadLayout"), null, new EventHandler(this.LoadButtonClick));
             this.menuDeleteButton = new ToolStripMenuItem(TextHelper.GetString("Label.DeleteLayout"), null, new EventHandler(this.DeleteButtonClick));
             this.menuSaveButton = new ToolStripMenuItem(TextHelper.GetString("Label.SaveCurrent"), null, new EventHandler(this.SaveButtonClick));
@@ -213,6 +217,7 @@ namespace LayoutManager
         private void FormLoaded(Object sender, EventArgs e)
         {
             this.toolStrip.Renderer = new DockPanelStripRenderer();
+            this.toolStrip.ImageScalingSize = PluginCore.Helpers.ScaleHelper.Scale(new Size(16, 16));
             this.infoListViewItem = new ListViewItem(TextHelper.GetString("Info.NoLayoutsFound"), 1);
             String file = Path.Combine(this.GetLayoutsDir(), "DefaultLayout.fdl");
             if (!File.Exists(file)) WriteDefaultLayout(file);

@@ -165,15 +165,21 @@ namespace ProjectManager.Controls.TreeView
             {
                 projects = value != null ? new List<Project>(value) : new List<Project>();
 
-                BeginUpdate();
                 try
                 {
-                    Visible = false;
-                    RebuildTree(false, false);
+                    BeginUpdate();
+                    BuildTree();
+                }
+                finally
+                {
+                    EndUpdate();
+                }
+                Refresh();
 
+                try
+                {
                     if (projects.Count > 0)
                     {
-                        //Project = projects[0];
                         ExpandedPaths = PluginMain.Settings.GetPrefs(projects[0]).ExpandedPaths;
                         Win32.Scrolling.SetScrollPos(this, new Point());
                     }
@@ -183,7 +189,6 @@ namespace ProjectManager.Controls.TreeView
                 }
                 finally
                 {
-                    Visible = true;
                     EndUpdate();
                 }
             }
@@ -254,17 +259,17 @@ namespace ProjectManager.Controls.TreeView
 			}
 			set
 			{
-				foreach (string path in value)
-					if (nodeMap.ContainsKey(path))
-					{
+                foreach (string path in value)
+                    if (nodeMap.ContainsKey(path))
+                    {
                         GenericNode node = nodeMap[path];
-						if (!(node is SwfFileNode) && !(node is ProjectNode))
-						{
-							node.Expand();
-                            if (!(node is ReferencesNode))
-                                node.Refresh(false);
-						}
-					}
+                        if (!(node is SwfFileNode) && !(node is ProjectNode))
+                        {
+                            node.Expand();
+                            //if (!(node is ReferencesNode))
+                            //    node.Refresh(false);
+                        }
+                    }
 			}
 		}
 
@@ -284,54 +289,54 @@ namespace ProjectManager.Controls.TreeView
         /// <summary>
 		/// Rebuilds the tree from scratch.
 		/// </summary>
-        public void RebuildTree(bool saveState)
+        public void RebuildTree()
         {
-            RebuildTree(saveState, true);
+            // store old tree state
+            List<string> previouslyExpanded = ExpandedPaths;
+            Point scrollPos = Win32.Scrolling.GetScrollPos(this);
+            string currentPath = SelectedNode != null ? SelectedNode.BackingPath : null;
+
+            try
+            {
+                BeginUpdate();
+                BuildTree();
+
+                // BUG: avoid nodes expansion to generate redraws
+                EndUpdate();
+                BeginUpdate();
+                
+                // restore tree state
+                ExpandedPaths = previouslyExpanded;
+                if (currentPath != null && NodeMap.ContainsKey(currentPath))
+                    SelectedNode = NodeMap[currentPath];
+                else
+                    SelectedNode = Nodes[0] as GenericNode;// projectNode;
+            }
+            finally
+            {
+                EndUpdate();
+                Win32.Scrolling.SetScrollPos(this, scrollPos);
+            }
         }
 
 		/// <summary>
 		/// Rebuilds the tree from scratch.
 		/// </summary>
-		public void RebuildTree(bool saveState, bool restoreExpanded)
+		public void BuildTree()
 		{
-			// store old tree state
-            List<string> previouslyExpanded = restoreExpanded ? ExpandedPaths : null;
-            Point scrollPos = restoreExpanded ? Win32.Scrolling.GetScrollPos(this) : new Point();
+            foreach (GenericNode node in Nodes)
+                node.Dispose();
 
-            BeginUpdate();
-            try
-            {
-                foreach (GenericNode node in Nodes)
-                    node.Dispose();
+            SelectedNodes = null;
+            Nodes.Clear();
+            nodeMap.Clear();
+            ShowRootLines = true;
 
-                SelectedNodes = null;
-                Nodes.Clear();
-                nodeMap.Clear();
-                ShowRootLines = true;
+            if (projects.Count == 0)
+                return;
 
-                if (projects.Count == 0)
-                    return;
-
-                // cleanup
-                EndUpdate();
-                Refresh();
-                BeginUpdate();
-
-                foreach (Project project in projects)
-                    RebuildProjectNode(project);
-
-                // restore tree state
-                if (restoreExpanded)
-                {
-                    ExpandedPaths = previouslyExpanded;
-                    SelectedNode = Nodes[0] as GenericNode;// projectNode;
-                    Win32.Scrolling.SetScrollPos(this, scrollPos);
-                }
-            }
-            finally
-            {
-                EndUpdate();
-            }
+            foreach (Project project in projects)
+                RebuildProjectNode(project);
 		}
 
         private void RebuildProjectNode(Project project)
@@ -361,11 +366,11 @@ namespace ProjectManager.Controls.TreeView
 		/// paths is null.
 		/// </summary>
 		public void RefreshTree(string[] paths)
-		{
-			BeginUpdate();
-
+        {
+            Point scrollPos = Win32.Scrolling.GetScrollPos(this);
             try
             {
+                BeginUpdate();
                 if (paths == null)
                 {
                     // full recursive refresh
@@ -381,7 +386,11 @@ namespace ProjectManager.Controls.TreeView
                 }
             }
             catch { }
-            finally { EndUpdate(); }
+            finally
+            {
+                EndUpdate();
+                Win32.Scrolling.SetScrollPos(this, scrollPos);
+            }
 		}
 
 		#endregion

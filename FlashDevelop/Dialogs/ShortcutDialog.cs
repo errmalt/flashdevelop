@@ -11,6 +11,7 @@ using PluginCore.Controls;
 using PluginCore.Utilities;
 using System.Collections.Generic;
 using PluginCore.Managers;
+using PluginCore.Helpers;
 
 namespace FlashDevelop.Dialogs
 {
@@ -35,6 +36,7 @@ namespace FlashDevelop.Dialogs
             this.InitializeContextMenu();
             this.ApplyLocalizedTexts();
             this.InitializeGraphics();
+            this.ApplyScaling();
         }
 
         #region Windows Form Designer Generated Code
@@ -99,7 +101,7 @@ namespace FlashDevelop.Dialogs
             this.pictureBox.Location = new System.Drawing.Point(12, 385);
             this.pictureBox.Name = "pictureBox";
             this.pictureBox.Size = new System.Drawing.Size(16, 16);
-            this.pictureBox.SizeMode = System.Windows.Forms.PictureBoxSizeMode.StretchImage;
+            this.pictureBox.SizeMode = System.Windows.Forms.PictureBoxSizeMode.Zoom;
             this.pictureBox.TabIndex = 5;
             this.pictureBox.TabStop = false;
             // 
@@ -201,6 +203,15 @@ namespace FlashDevelop.Dialogs
             this.infoLabel.Text = TextHelper.GetString("Info.ShortcutEditInfo");
             this.closeButton.Text = TextHelper.GetString("Label.Close");
             this.Text = " " + TextHelper.GetString("Title.Shortcuts");
+        }
+
+        /// <summary>
+        /// Applies additional scaling to controls in order to support HDPI
+        /// </summary>
+        private void ApplyScaling()
+        {
+            this.idHeader.Width = ScaleHelper.Scale(this.idHeader.Width);
+            this.keyHeader.Width = ScaleHelper.Scale(this.keyHeader.Width);
         }
 
         /// <summary>

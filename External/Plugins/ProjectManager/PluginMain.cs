@@ -39,6 +39,7 @@ namespace ProjectManager
         public const string InstalledSDKsChanged = "ProjectManager.InstalledSDKsChanged";
         public const string LineEntryDialog = "ProjectManager.LineEntryDialog";
         public const string HotBuild = "ProjectManager.HotBuild";
+        public const string RefreshTree = "ProjectManager.RefreshTree";
     }
 
     public static class ProjectManagerEvents
@@ -209,6 +210,7 @@ namespace ProjectManager
             menus.ProjectMenu.CloseProject.Click += delegate { CloseProject(false); };
             menus.ProjectMenu.OpenResource.Click += delegate { OpenResource(); };
             menus.ProjectMenu.TestMovie.Click += delegate { TestMovie(); };
+            menus.ProjectMenu.RunProject.Click += delegate { RunProject(); };
             menus.ProjectMenu.BuildProject.Click += delegate { BuildProject(); };
             menus.ProjectMenu.CleanProject.Click += delegate { CleanProject(); };
             menus.ProjectMenu.Properties.Click += delegate { OpenProjectProperties(); };
@@ -500,6 +502,10 @@ namespace ProjectManager
                             e.Handled = true;
                         }
                     }
+                    else if (de.Action == ProjectManagerCommands.RefreshTree)
+                    {
+                        TreeRefreshSelectedNode();
+                    }
                     else if (de.Action == ProjectManagerCommands.LineEntryDialog)
                     {
                         Hashtable info = (Hashtable)de.Data;
@@ -586,7 +592,7 @@ namespace ProjectManager
 
             // configure
             var prefs = PluginMain.Settings.GetPrefs(project);
-            project.TraceEnabled = !prefs.DebugMode;
+            project.TraceEnabled = prefs.DebugMode;
             project.TargetBuild = prefs.TargetBuild;
             project.UpdateVars(true);
 
@@ -718,7 +724,7 @@ namespace ProjectManager
                 dialog.ShowDialog(pluginUI);
 
                 if (dialog.ClasspathsChanged || dialog.AssetsChanged)
-                    Tree.RebuildTree(true);
+                    Tree.RebuildTree();
 
                 if (dialog.PropertiesChanged)
                 {
@@ -942,7 +948,7 @@ namespace ProjectManager
             projectActions.UpdateASCompletion(MainForm, project);
             pluginUI.NotifyIssues();
             FlexCompilerShell.Cleanup(); // clear compile cache for this project
-            Tree.RebuildTree(true);
+            Tree.RebuildTree();
             listenToPathChange = true;
         }
 
@@ -981,6 +987,12 @@ namespace ProjectManager
             {
                 BroadcastBuildFailed(project);
             }
+        }
+
+        private void RunProject()
+        {
+            var de = new DataEvent(EventType.Command, ProjectManagerCommands.PlayOutput, null);
+            EventManager.DispatchEvent(this, de);
         }
 
         private void BuildProject() 
@@ -1070,7 +1082,7 @@ namespace ProjectManager
         {
             if (setting == "ExcludedFileTypes" || setting == "ExcludedDirectories" || setting == "ShowProjectClasspaths" || setting == "ShowGlobalClasspaths" || setting == "GlobalClasspath")
             {
-                Tree.RebuildTree(true);
+                Tree.RebuildTree();
             }
             else if (setting == "ExecutableFileTypes")
             {
@@ -1199,7 +1211,7 @@ namespace ProjectManager
 
         private void TreeAlwaysCompileItems()
         {
-            Project project = Tree.ProjectOf(Tree.SelectedPaths[0]);
+            Project project = Tree.ProjectOf(Tree.SelectedNode);
             if (project != null)
                 projectActions.ToggleAlwaysCompile(project, Tree.SelectedPaths);
             // TODO report invalid action
@@ -1207,7 +1219,7 @@ namespace ProjectManager
 
         private void TreeDocumentClass()
         {
-            Project project = Tree.ProjectOf(Tree.SelectedPaths[0]);
+            Project project = Tree.ProjectOf(Tree.SelectedNode);
             if (project != null)
                 projectActions.ToggleDocumentClass(project, Tree.SelectedPaths);
             // TODO report invalid action

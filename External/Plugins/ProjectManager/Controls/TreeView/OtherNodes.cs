@@ -12,27 +12,47 @@ namespace ProjectManager.Controls.TreeView
 {
     public class ProjectNode : WatcherNode
     {
-        Project projectRef;
         ReferencesNode references;
         bool isActive;
 
         public ProjectNode(Project project) : base(project.Directory)
         {
-            projectRef = project;
+            this.project = project;
             isDraggable = false;
             isRenamable = false;
         }
 
         public override void Refresh(bool recursive)
         {
-            RemoveReferences();
             base.Refresh(recursive);
-            RefreshReferences(recursive);
+            FontStyle style = isActive ? FontStyle.Bold : FontStyle.Regular;
+            NodeFont = new System.Drawing.Font(PluginCore.PluginBase.Settings.DefaultFont, FontStyle.Bold);
             Text = ProjectRef.Name + " (" + ProjectRef.Language.ToUpper() + ")";
             ImageIndex = Icons.Project.Index;
             SelectedImageIndex = ImageIndex;
+
+            if (References != null)
+            {
+                int p = Nodes.IndexOf(References);
+                if (p > 0)
+                {
+                    Nodes.RemoveAt(p);
+                    Nodes.Insert(0, References);
+                }
+            }
+
+            NotifyProjectRefresh();
             Expand();
-            NotifyRefresh();
+        }
+
+        private void NotifyProjectRefresh()
+        {
+            base.NotifyRefresh();
+        }
+
+        protected override void NotifyRefresh()
+        {
+            // do nothing yet, we are not finished
         }
 
         private void RefreshReferences(bool recursive)
@@ -52,7 +72,7 @@ namespace ProjectManager.Controls.TreeView
 
         public Project ProjectRef
         {
-            get { return projectRef; }
+            get { return project; }
         }
 
         public ReferencesNode References
@@ -122,7 +142,6 @@ namespace ProjectManager.Controls.TreeView
 
         public override void Refresh(bool recursive)
         {
-
             base.Refresh(recursive);
 
             base.isInvalid = !Directory.Exists(BackingPath);
@@ -177,12 +196,9 @@ namespace ProjectManager.Controls.TreeView
 
     public class ReferencesNode : GenericNode
     {
-        Project project;
-
         public ReferencesNode(Project project, string text)
             : base(Path.Combine(project.Directory, "__References__"))
         {
-            this.project = project;
             Text = text;
             ImageIndex = SelectedImageIndex = Icons.HiddenFolder.Index;
             isDraggable = false;
@@ -191,6 +207,8 @@ namespace ProjectManager.Controls.TreeView
 
         public override void Refresh(bool recursive)
         {
+            base.Refresh(recursive);
+
             ArrayList projectClasspaths = new ArrayList();
             ArrayList globalClasspaths = new ArrayList();
 

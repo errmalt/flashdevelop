@@ -38,7 +38,7 @@ namespace ProjectManager.Building.AS3
             bool fcshExists = File.Exists(fcshPath);
             bool ascshExists = File.Exists(ascshPath);
             bool asc2Exixts = File.Exists(asc2Path);
-            asc2Mode = ascshExists || (asc2Exixts && !fcshExists);
+            asc2Mode = !fcshExists && (ascshExists || asc2Exixts);
  
             bool hostedInFD = (fcshExists || ascshExists) && ipcName != null && ipcName != "";
 
@@ -65,33 +65,58 @@ namespace ProjectManager.Building.AS3
 				flexsdkPath = Path.GetDirectoryName(flexsdkPath);
 
             sdkPath = flexsdkPath;
-            mxmlcPath = Path.Combine(Path.Combine(flexsdkPath, "lib"), "mxmlc.jar");
-            fcshPath = Path.Combine(Path.Combine(flexsdkPath, "lib"), "fcsh.jar");
-            asc2Path = Path.Combine(Path.Combine(flexsdkPath, "lib"), "mxmlc-cli.jar");
-            if (!File.Exists(asc2Path)) ascshPath = null;
+            string libPath = Path.Combine(flexsdkPath, "lib");
+            mxmlcPath = Path.Combine(libPath, "mxmlc.jar");
+            fcshPath = Path.Combine(libPath, "fcsh.jar");
+            asc2Path = Path.Combine(libPath, "mxmlc-cli.jar");
+            if (File.Exists(mxmlcPath) || File.Exists(fcshPath) || !File.Exists(asc2Path))
+            {
+                // priority to FCSH
+                ascshPath = null;
+            }
             else
             {
-                ascshPath = Path.Combine(Path.Combine(flexsdkPath, "lib"), "ascsh.jar");
-                if (!File.Exists(ascshPath))
+                ascshPath = Path.Combine(libPath, "ascsh.jar");
+                string toolsDir = Path.GetDirectoryName(FDBuildDirectory);
+                string lib = Path.Combine(toolsDir, "flexlibs/lib/ascsh.jar");
+                if (ShouldCopyASCSH(lib, ascshPath))
                 {
                     // try copying the missing JAR in the SDK
-                    string toolsDir = Path.GetDirectoryName(FDBuildDirectory);
-                    string lib = Path.Combine(toolsDir, "flexlibs/lib/ascsh.jar");
                     try
                     {
                         File.Copy(lib, ascshPath);
                         Console.WriteLine("Copied 'ascsch.jar' in the AIR SDK for incremental ASC2 compilation.");
                     }
-                    catch 
+                    catch
                     {
                         ascshPath = null;
                     }
                 }
             }
 
-            jvmConfig = PluginCore.Helpers.JvmConfigHelper.ReadConfig(Path.Combine(flexsdkPath, "bin\\jvm.config"));
+            jvmConfig = PluginCore.Helpers.JvmConfigHelper.ReadConfig(flexsdkPath);
             if (jvmConfig.ContainsKey("java.args") && jvmConfig["java.args"].Trim().Length > 0)
                 VMARGS = jvmConfig["java.args"];
+        }
+
+        private bool ShouldCopyASCSH(string lib, string ascsh)
+        {
+            if (File.Exists(ascsh + ".disabled")) return false;
+            if (!File.Exists(ascsh)) return true;
+            // should the JAR be upgraded?
+            FileInfo infoFrom = new FileInfo(lib);
+            FileInfo infoTo = new FileInfo(ascsh);
+            if (infoFrom.LastWriteTime > infoTo.LastWriteTime)
+            {
+                try
+                {
+                    Console.WriteLine("Found 'ascsh.jar' but it looks obsolete.");
+                    File.Delete(ascsh);
+                    return true;
+                }
+                catch { }
+            }
+            return false;
         }
 
         private string ResolveFlexSdk(string flexsdkPath)

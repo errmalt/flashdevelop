@@ -29,8 +29,7 @@ namespace AS3Context.Compiler
             }
             else return;
 
-            Dictionary<string, string> jvmConfig = 
-                JvmConfigHelper.ReadConfig(Path.Combine(flexSDKPath, "bin\\jvm.config"));
+            Dictionary<string, string> jvmConfig = JvmConfigHelper.ReadConfig(flexSDKPath);
 
             if (process == null || process.HasExited)
                 Initialize(flexSDKPath, jvmConfig, projectPath);
@@ -67,6 +66,7 @@ namespace AS3Context.Compiler
             cmdQueue = new Queue<string>();
 
             string fdbPath = Path.Combine(flexSDKPath, "lib\\fdb.jar");
+            if (!File.Exists(fdbPath)) fdbPath = Path.Combine(flexSDKPath, "lib\\legacy\\fdb.jar");
             if (!File.Exists(fdbPath))
             {
                 process = null;
